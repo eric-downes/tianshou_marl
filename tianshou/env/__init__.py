@@ -6,6 +6,7 @@ from tianshou.env.gym_wrappers import (
     TruncatedAsTerminated,
 )
 from tianshou.env.pettingzoo_env import PettingZooEnv
+from tianshou.env.enhanced_pettingzoo_env import EnhancedPettingZooEnv
 from tianshou.env.venv_wrappers import VectorEnvNormObs, VectorEnvWrapper
 from tianshou.env.venvs import (
     BaseVectorEnv,
@@ -24,6 +25,7 @@ __all__ = [
     "VectorEnvWrapper",
     "VectorEnvNormObs",
     "PettingZooEnv",
+    "EnhancedPettingZooEnv",
     "ContinuousToDiscrete",
     "MultiDiscreteToDiscrete",
     "TruncatedAsTerminated",
