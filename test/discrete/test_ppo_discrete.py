@@ -16,6 +16,7 @@ from tianshou.env import DummyVectorEnv
 from tianshou.trainer import OnPolicyTrainerParams
 from tianshou.utils import TensorboardLogger
 from tianshou.utils.net.common import (
+import pytest
     ActionReprNet,
     ActionReprNetDataParallelWrapper,
     ActorCritic,
@@ -63,6 +64,7 @@ def get_args() -> argparse.Namespace:
     return parser.parse_known_args()[0]
 
 
+@pytest.mark.slow
 def test_ppo(args: argparse.Namespace = get_args(), enable_assertions: bool = True) -> None:
     env = gym.make(args.task)
     space_info = SpaceInfo.from_env(env)
@@ -166,6 +168,7 @@ def test_ppo(args: argparse.Namespace = get_args(), enable_assertions: bool = Tr
         assert stop_fn(result.best_reward)
 
 
+@pytest.mark.slow
 def test_ppo_determinism() -> None:
     main_fn = lambda args: test_ppo(args, enable_assertions=False)
     AlgorithmDeterminismTest("discrete_ppo", main_fn, get_args()).run()

@@ -49,6 +49,7 @@ def get_args() -> argparse.Namespace:
     envpool is None,
     reason="EnvPool is not installed. If on linux, please install it (e.g. as poetry extra)",
 )
+@pytest.mark.slow
 def test_psrl(args: argparse.Namespace = get_args()) -> None:
     train_envs = env = envpool.make_gymnasium(
         args.task, num_envs=args.num_train_envs, seed=args.seed

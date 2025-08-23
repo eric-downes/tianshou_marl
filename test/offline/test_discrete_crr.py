@@ -13,6 +13,7 @@ from tianshou.algorithm import Algorithm, DiscreteCRR
 from tianshou.algorithm.modelfree.reinforce import DiscreteActorPolicy
 from tianshou.algorithm.optim import AdamOptimizerFactory
 from tianshou.data import (
+import pytest
     Collector,
     CollectStats,
     PrioritizedVectorReplayBuffer,
@@ -51,6 +52,7 @@ def get_args() -> argparse.Namespace:
     return parser.parse_known_args()[0]
 
 
+@pytest.mark.slow
 def test_discrete_crr(
     args: argparse.Namespace = get_args(),
     enable_assertions: bool = True,
@@ -144,6 +146,7 @@ def test_discrete_crr(
         assert stop_fn(result.best_reward)
 
 
+@pytest.mark.slow
 def test_discrete_crr_determinism() -> None:
     main_fn = lambda args: test_discrete_crr(args, enable_assertions=False)
     AlgorithmDeterminismTest("offline_discrete_crr", main_fn, get_args(), is_offline=True).run()

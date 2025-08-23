@@ -18,6 +18,7 @@ from tianshou.trainer import OnPolicyTrainerParams
 from tianshou.utils import TensorboardLogger
 from tianshou.utils.net.common import MLP, ActorCritic, Net
 from tianshou.utils.net.discrete import (
+import pytest
     DiscreteActor,
     DiscreteCritic,
     IntrinsicCuriosityModule,
@@ -80,6 +81,7 @@ def get_args() -> argparse.Namespace:
     return parser.parse_known_args()[0]
 
 
+@pytest.mark.slow
 def test_ppo(args: argparse.Namespace = get_args()) -> None:
     env = gym.make(args.task)
 

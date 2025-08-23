@@ -12,6 +12,7 @@ from tianshou.algorithm.algorithm_base import Algorithm
 from tianshou.algorithm.modelfree.qrdqn import QRDQNPolicy
 from tianshou.algorithm.optim import AdamOptimizerFactory
 from tianshou.data import (
+import pytest
     Collector,
     CollectStats,
     PrioritizedVectorReplayBuffer,
@@ -59,6 +60,7 @@ def get_args() -> argparse.Namespace:
     return parser.parse_known_args()[0]
 
 
+@pytest.mark.slow
 def test_qrdqn(args: argparse.Namespace = get_args(), enable_assertions: bool = True) -> None:
     env = gym.make(args.task)
     assert isinstance(env.action_space, gym.spaces.Discrete)
@@ -175,12 +177,14 @@ def test_qrdqn(args: argparse.Namespace = get_args(), enable_assertions: bool = 
         assert stop_fn(result.best_reward)
 
 
+@pytest.mark.slow
 def test_pqrdqn(args: argparse.Namespace = get_args()) -> None:
     args.prioritized_replay = True
     args.gamma = 0.95
     test_qrdqn(args)
 
 
+@pytest.mark.slow
 def test_qrdqn_determinism() -> None:
     main_fn = lambda args: test_qrdqn(args, enable_assertions=False)
     AlgorithmDeterminismTest("discrete_qrdqn", main_fn, get_args()).run()

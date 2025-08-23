@@ -18,6 +18,7 @@ from tianshou.trainer import OffPolicyTrainerParams
 from tianshou.utils import TensorboardLogger
 from tianshou.utils.net.common import Net
 from tianshou.utils.net.continuous import (
+import pytest
     ContinuousActorDeterministic,
     ContinuousActorProbabilistic,
     ContinuousCritic,
@@ -65,6 +66,7 @@ def get_args() -> argparse.Namespace:
     return parser.parse_known_args()[0]
 
 
+@pytest.mark.slow
 def test_sac_with_il(
     args: argparse.Namespace = get_args(),
     enable_assertions: bool = True,
@@ -232,6 +234,7 @@ def test_sac_with_il(
         assert stop_fn(result.best_reward)
 
 
+@pytest.mark.slow
 def test_sac_determinism() -> None:
     main_fn = lambda args: test_sac_with_il(args, enable_assertions=False, skip_il=True)
     AlgorithmDeterminismTest("continuous_sac", main_fn, get_args()).run()

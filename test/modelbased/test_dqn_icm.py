@@ -10,6 +10,7 @@ from tianshou.algorithm import DQN, Algorithm, ICMOffPolicyWrapper
 from tianshou.algorithm.modelfree.dqn import DiscreteQLearningPolicy
 from tianshou.algorithm.optim import AdamOptimizerFactory
 from tianshou.data import (
+import pytest
     Collector,
     CollectStats,
     PrioritizedVectorReplayBuffer,
@@ -74,6 +75,7 @@ def get_args() -> argparse.Namespace:
     return parser.parse_known_args()[0]
 
 
+@pytest.mark.slow
 def test_dqn_icm(args: argparse.Namespace = get_args()) -> None:
     env = gym.make(args.task)
     assert isinstance(env.action_space, gym.spaces.Discrete)

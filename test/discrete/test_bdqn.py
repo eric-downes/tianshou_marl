@@ -13,6 +13,7 @@ from tianshou.env import ContinuousToDiscrete, DummyVectorEnv
 from tianshou.trainer import OffPolicyTrainerParams
 from tianshou.utils.net.common import BranchingNet
 from tianshou.utils.torch_utils import policy_within_training_step
+import pytest
 
 
 def get_args() -> argparse.Namespace:
@@ -51,6 +52,7 @@ def get_args() -> argparse.Namespace:
     return parser.parse_known_args()[0]
 
 
+@pytest.mark.slow
 def test_bdq(args: argparse.Namespace = get_args(), enable_assertions: bool = True) -> None:
     env = gym.make(args.task)
     env = ContinuousToDiscrete(env, args.action_per_branch)
@@ -155,6 +157,7 @@ def test_bdq(args: argparse.Namespace = get_args(), enable_assertions: bool = Tr
         assert stop_fn(result.best_reward)
 
 
+@pytest.mark.slow
 def test_bdq_determinism() -> None:
     main_fn = lambda args: test_bdq(args, enable_assertions=False)
     AlgorithmDeterminismTest("discrete_bdq", main_fn, get_args()).run()

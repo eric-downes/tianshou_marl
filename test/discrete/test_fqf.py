@@ -12,6 +12,7 @@ from tianshou.algorithm.algorithm_base import Algorithm
 from tianshou.algorithm.modelfree.fqf import FQFPolicy
 from tianshou.algorithm.optim import AdamOptimizerFactory, RMSpropOptimizerFactory
 from tianshou.data import (
+import pytest
     Collector,
     CollectStats,
     PrioritizedVectorReplayBuffer,
@@ -64,6 +65,7 @@ def get_args() -> argparse.Namespace:
     return parser.parse_known_args()[0]
 
 
+@pytest.mark.slow
 def test_fqf(args: argparse.Namespace = get_args(), enable_assertions: bool = True) -> None:
     env = gym.make(args.task)
     space_info = SpaceInfo.from_env(env)
@@ -184,12 +186,14 @@ def test_fqf(args: argparse.Namespace = get_args(), enable_assertions: bool = Tr
         assert stop_fn(result.best_reward)
 
 
+@pytest.mark.slow
 def test_pfqf(args: argparse.Namespace = get_args()) -> None:
     args.prioritized_replay = True
     args.gamma = 0.95
     test_fqf(args)
 
 
+@pytest.mark.slow
 def test_fqf_determinism() -> None:
     main_fn = lambda args: test_fqf(args, enable_assertions=False)
     AlgorithmDeterminismTest("discrete_fqf", main_fn, get_args()).run()
