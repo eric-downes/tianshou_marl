@@ -64,6 +64,7 @@ def create_training_config(
         ReinforceExperimentBuilder,
     ],
 )
+@pytest.mark.slow
 def test_experiment_builder_continuous_default_params(builder_cls: type[ExperimentBuilder]) -> None:
     env_factory = ContinuousTestEnvFactory()
     training_config = create_training_config(
@@ -95,6 +96,7 @@ def test_experiment_builder_continuous_default_params(builder_cls: type[Experime
         IQNExperimentBuilder,
     ],
 )
+@pytest.mark.slow
 def test_experiment_builder_discrete_default_params(builder_cls: type[ExperimentBuilder]) -> None:
     env_factory = DiscreteTestEnvFactory()
     training_config = create_training_config(

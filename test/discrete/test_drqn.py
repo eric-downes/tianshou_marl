@@ -18,6 +18,7 @@ from tianshou.utils import TensorboardLogger
 from tianshou.utils.net.common import Recurrent
 from tianshou.utils.space_info import SpaceInfo
 from tianshou.utils.torch_utils import policy_within_training_step
+import pytest
 
 
 def get_args() -> argparse.Namespace:
@@ -51,6 +52,7 @@ def get_args() -> argparse.Namespace:
     return parser.parse_known_args()[0]
 
 
+@pytest.mark.slow
 def test_drqn(args: argparse.Namespace = get_args(), enable_assertions: bool = True) -> None:
     env = gym.make(args.task)
     assert isinstance(env.action_space, gym.spaces.Discrete)
@@ -143,6 +145,7 @@ def test_drqn(args: argparse.Namespace = get_args(), enable_assertions: bool = T
         assert stop_fn(result.best_reward)
 
 
+@pytest.mark.slow
 def test_drqn_determinism() -> None:
     main_fn = lambda args: test_drqn(args, enable_assertions=False)
     AlgorithmDeterminismTest("discrete_drqn", main_fn, get_args()).run()

@@ -10,6 +10,7 @@ from torch.utils.tensorboard import SummaryWriter
 from tianshou.algorithm import DiscreteSAC
 from tianshou.algorithm.algorithm_base import Algorithm
 from tianshou.algorithm.modelfree.discrete_sac import (
+import pytest
     DiscreteSACPolicy,
 )
 from tianshou.algorithm.modelfree.sac import AutoAlpha
@@ -55,6 +56,7 @@ def get_args() -> argparse.Namespace:
     return parser.parse_known_args()[0]
 
 
+@pytest.mark.slow
 def test_discrete_sac(
     args: argparse.Namespace = get_args(),
     enable_assertions: bool = True,
@@ -159,6 +161,7 @@ def test_discrete_sac(
         assert stop_fn(result.best_reward)
 
 
+@pytest.mark.slow
 def test_discrete_sac_determinism() -> None:
     main_fn = lambda args: test_discrete_sac(args, enable_assertions=False)
     ignored_messages = [

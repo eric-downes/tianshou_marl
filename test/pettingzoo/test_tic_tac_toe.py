@@ -1,8 +1,10 @@
 import argparse
 
 from tic_tac_toe import get_args, train_agent, watch
+import pytest
 
 
+@pytest.mark.slow
 def test_tic_tac_toe(args: argparse.Namespace = get_args()) -> None:
     if args.watch:
         watch(args)

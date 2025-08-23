@@ -20,6 +20,7 @@ from tianshou.utils import TensorboardLogger
 from tianshou.utils.net.common import Net
 from tianshou.utils.net.continuous import ContinuousActorProbabilistic, ContinuousCritic
 from tianshou.utils.space_info import SpaceInfo
+import pytest
 
 
 def get_args() -> argparse.Namespace:
@@ -59,6 +60,7 @@ def get_args() -> argparse.Namespace:
     return parser.parse_known_args()[0]
 
 
+@pytest.mark.slow
 def test_trpo(args: argparse.Namespace = get_args(), enable_assertions: bool = True) -> None:
     env = gym.make(args.task)
     space_info = SpaceInfo.from_env(env)
@@ -167,6 +169,7 @@ def test_trpo(args: argparse.Namespace = get_args(), enable_assertions: bool = T
         assert stop_fn(result.best_reward)
 
 
+@pytest.mark.slow
 def test_trpo_determinism() -> None:
     main_fn = lambda args: test_trpo(args, enable_assertions=False)
     AlgorithmDeterminismTest("continuous_trpo", main_fn, get_args()).run()

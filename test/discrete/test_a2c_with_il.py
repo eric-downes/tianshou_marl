@@ -18,6 +18,7 @@ from tianshou.trainer import OffPolicyTrainerParams, OnPolicyTrainerParams
 from tianshou.utils import TensorboardLogger
 from tianshou.utils.net.common import Net
 from tianshou.utils.net.discrete import DiscreteActor, DiscreteCritic
+import pytest
 
 try:
     import envpool
@@ -62,6 +63,7 @@ def get_args() -> argparse.Namespace:
     return parser.parse_known_args()[0]
 
 
+@pytest.mark.slow
 def test_a2c_with_il(
     args: argparse.Namespace = get_args(),
     enable_assertions: bool = True,
@@ -217,6 +219,7 @@ def test_a2c_with_il(
         assert stop_fn(result.best_reward)
 
 
+@pytest.mark.slow
 def test_ppo_determinism() -> None:
     main_fn = lambda args: test_a2c_with_il(args, enable_assertions=False, skip_il=True)
     AlgorithmDeterminismTest("discrete_a2c", main_fn, get_args()).run()

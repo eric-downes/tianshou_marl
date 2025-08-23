@@ -20,6 +20,7 @@ from tianshou.utils import TensorboardLogger
 from tianshou.utils.net.common import MLP, Net
 from tianshou.utils.net.continuous import VAE, ContinuousCritic, Perturbation
 from tianshou.utils.space_info import SpaceInfo
+import pytest
 
 
 def get_args() -> argparse.Namespace:
@@ -63,6 +64,7 @@ def get_args() -> argparse.Namespace:
     return parser.parse_known_args()[0]
 
 
+@pytest.mark.slow
 def test_bcq(args: argparse.Namespace = get_args(), enable_assertions: bool = True) -> None:
     if os.path.exists(args.load_buffer_name) and os.path.isfile(args.load_buffer_name):
         if args.load_buffer_name.endswith(".hdf5"):
@@ -209,6 +211,7 @@ def test_bcq(args: argparse.Namespace = get_args(), enable_assertions: bool = Tr
         assert stop_fn(result.best_reward)
 
 
+@pytest.mark.slow
 def test_bcq_determinism() -> None:
     main_fn = lambda args: test_bcq(args, enable_assertions=False)
     AlgorithmDeterminismTest("offline_bcq", main_fn, get_args(), is_offline=True).run()

@@ -19,6 +19,7 @@ from tianshou.utils import TensorboardLogger
 from tianshou.utils.net.common import ActorCritic, Net
 from tianshou.utils.net.continuous import ContinuousActorProbabilistic, ContinuousCritic
 from tianshou.utils.space_info import SpaceInfo
+import pytest
 
 
 def get_args() -> argparse.Namespace:
@@ -60,6 +61,7 @@ def get_args() -> argparse.Namespace:
     return parser.parse_known_args()[0]
 
 
+@pytest.mark.slow
 def test_ppo(args: argparse.Namespace = get_args(), enable_assertions: bool = True) -> None:
     env = gym.make(args.task)
 
@@ -191,11 +193,13 @@ def test_ppo(args: argparse.Namespace = get_args(), enable_assertions: bool = Tr
         assert stop_fn(result.best_reward)
 
 
+@pytest.mark.slow
 def test_ppo_resume(args: argparse.Namespace = get_args()) -> None:
     args.resume = True
     test_ppo(args)
 
 
+@pytest.mark.slow
 def test_ppo_determinism() -> None:
     main_fn = lambda args: test_ppo(args, enable_assertions=False)
     AlgorithmDeterminismTest("continuous_ppo", main_fn, get_args()).run()
