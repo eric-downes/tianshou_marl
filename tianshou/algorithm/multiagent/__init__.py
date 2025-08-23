@@ -15,6 +15,15 @@ from tianshou.algorithm.multiagent.training_coordinator import (
     SelfPlayTrainer,
     LeaguePlayTrainer,
 )
+from tianshou.algorithm.multiagent.ctde import (
+    CTDEPolicy,
+    GlobalStateConstructor,
+    DecentralizedActor,
+    CentralizedCritic,
+    QMIXPolicy,
+    QMIXMixer,
+    MADDPGPolicy,
+)
 
 __all__ = [
     "MultiAgentPolicy",
@@ -28,4 +37,11 @@ __all__ = [
     "SequentialTrainer",
     "SelfPlayTrainer",
     "LeaguePlayTrainer",
+    "CTDEPolicy",
+    "GlobalStateConstructor",
+    "DecentralizedActor",
+    "CentralizedCritic",
+    "QMIXPolicy",
+    "QMIXMixer",
+    "MADDPGPolicy",
 ]
