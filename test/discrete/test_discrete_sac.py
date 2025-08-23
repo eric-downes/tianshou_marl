@@ -10,7 +10,6 @@ from torch.utils.tensorboard import SummaryWriter
 from tianshou.algorithm import DiscreteSAC
 from tianshou.algorithm.algorithm_base import Algorithm
 from tianshou.algorithm.modelfree.discrete_sac import (
-import pytest
     DiscreteSACPolicy,
 )
 from tianshou.algorithm.modelfree.sac import AutoAlpha
@@ -22,6 +21,7 @@ from tianshou.utils import TensorboardLogger
 from tianshou.utils.net.common import Net
 from tianshou.utils.net.discrete import DiscreteActor, DiscreteCritic
 from tianshou.utils.space_info import SpaceInfo
+import pytest
 
 
 def get_args() -> argparse.Namespace:

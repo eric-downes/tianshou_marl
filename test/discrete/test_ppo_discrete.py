@@ -16,7 +16,6 @@ from tianshou.env import DummyVectorEnv
 from tianshou.trainer import OnPolicyTrainerParams
 from tianshou.utils import TensorboardLogger
 from tianshou.utils.net.common import (
-import pytest
     ActionReprNet,
     ActionReprNetDataParallelWrapper,
     ActorCritic,
@@ -25,6 +24,7 @@ import pytest
 )
 from tianshou.utils.net.discrete import DiscreteActor, DiscreteCritic
 from tianshou.utils.space_info import SpaceInfo
+import pytest
 
 
 def get_args() -> argparse.Namespace:

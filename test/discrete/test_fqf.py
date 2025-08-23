@@ -12,7 +12,6 @@ from tianshou.algorithm.algorithm_base import Algorithm
 from tianshou.algorithm.modelfree.fqf import FQFPolicy
 from tianshou.algorithm.optim import AdamOptimizerFactory, RMSpropOptimizerFactory
 from tianshou.data import (
-import pytest
     Collector,
     CollectStats,
     PrioritizedVectorReplayBuffer,
@@ -26,6 +25,7 @@ from tianshou.utils.net.common import Net
 from tianshou.utils.net.discrete import FractionProposalNetwork, FullQuantileFunction
 from tianshou.utils.space_info import SpaceInfo
 from tianshou.utils.torch_utils import policy_within_training_step
+import pytest
 
 
 def get_args() -> argparse.Namespace:
