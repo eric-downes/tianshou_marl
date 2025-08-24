@@ -51,7 +51,7 @@ class FlexibleMultiAgentPolicyManager(MultiAgentPolicy):
     def __init__(
         self,
         policies: Policy | list[Policy] | dict[str, Policy],
-        env,  # PettingZooEnv type
+        env: Any,  # PettingZooEnv type
         mode: Literal["independent", "shared", "grouped", "custom"] = "independent",
         agent_groups: dict[str, list[str]] | None = None,
         policy_mapping_fn: Callable[[str], str] | None = None,
@@ -85,7 +85,7 @@ class FlexibleMultiAgentPolicyManager(MultiAgentPolicy):
         self.policy_map = self._build_policy_map(policies, env.agents)
 
         # Initialize parent class with the policy map
-        super().__init__(policies=self.policy_map)
+        super().__init__(policies=self.policy_map)  # type: ignore[arg-type]
 
         # Store original policies for reference
         self._original_policies = policies
@@ -103,7 +103,7 @@ class FlexibleMultiAgentPolicyManager(MultiAgentPolicy):
             }
         else:
             # For independent and custom, create dict with unique policies
-            unique_policies = {}
+            unique_policies: dict[str, Policy] = {}
             for agent, policy in self.policy_map.items():
                 if policy not in unique_policies.values():
                     unique_policies[agent] = policy

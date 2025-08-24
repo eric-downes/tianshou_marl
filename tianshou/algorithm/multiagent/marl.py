@@ -102,7 +102,7 @@ class MultiAgentPolicy(Policy):
             act[agent_index] = policy.add_exploration_noise(act[agent_index], batch[agent_index])
         return act
 
-    def forward(  # type: ignore
+    def forward(
         self,
         batch: Batch,
         state: dict | Batch | None = None,
