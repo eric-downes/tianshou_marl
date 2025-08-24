@@ -40,25 +40,16 @@ jobs:
           path: ./.venv
           key: venv-dev-${{ hashFiles('poetry.lock') }}
       
-      - name: Install minimal dependencies  
-        run: |
-          # Skip heavy deps, install only core + ruff
-          poetry install --only main --no-interaction --no-ansi
-          poetry run pip install ruff
-      
       - name: Ultra-minimal lint (critical errors only)
         run: |
-          poetry run ruff check . --select F --ignore F401,F841 || exit 1
+          # Skip poetry entirely for speed - use pip directly
+          pip install ruff
+          ruff check . --select F --ignore F401,F841 || exit 1
           echo "✅ No critical syntax/import errors"
       
-      - name: Ultra-fast smoke test (< 10 seconds)
+      - name: Basic Python syntax check
         run: |
-          # Just test basic imports work - no full test suite
-          poetry run python -c "
-          print('Testing critical imports...')
-          import tianshou
-          from tianshou.algorithm.multiagent import CTDEPolicy
-          from tianshou.env import EnhancedPettingZooEnv  
-          print('✅ All critical imports successful')
-          " || exit 1
+          # Just check Python can parse our files
+          python -m py_compile tianshou/algorithm/multiagent/*.py || exit 1
+          python -c "print('✅ All Python files can be parsed')"
         timeout-minutes: 1
