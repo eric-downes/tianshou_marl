@@ -57,8 +57,8 @@ jobs:
       - name: Install minimal test dependencies
         run: |
           # Install only essential packages for fast tests
-          # Note: pandas is required by tianshou/data/batch.py
-          pip install pytest numpy torch gymnasium pettingzoo pandas
+          # Note: pandas and deepdiff are required by tianshou/data/batch.py
+          pip install pytest numpy torch gymnasium pettingzoo pandas deepdiff
           echo "✅ Test dependencies installed"
         timeout-minutes: 2
       
