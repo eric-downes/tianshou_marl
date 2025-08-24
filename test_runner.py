@@ -34,19 +34,25 @@ def main():
     
     # Build pytest command
     pytest_cmd = ["test"]
+    suppress_warnings = False
     
     if args.mode == "all":
         print("Running all tests (including slow training tests)...")
         print("This may take several minutes...")
+        print("Warnings are shown to help identify potential issues.")
         pytest_cmd.extend(["-m", ""])
     elif args.mode == "slow":
         print("Running only slow tests...")
+        print("Warnings are shown to help identify potential issues.")
         pytest_cmd.extend(["-m", "slow"])
     elif args.mode == "fast":
         print("Running fast tests only...")
-        pytest_cmd.extend(["-m", "not slow"])
+        print("Warnings suppressed for cleaner output. Use -W default to show them.")
+        pytest_cmd.extend(["-m", "not slow", "--disable-warnings"])
+        suppress_warnings = True
     elif args.mode == "marl":
         print("Running MARL tests only...")
+        print("Warnings are shown to help identify potential issues.")
         pytest_cmd = ["test/multiagent", "test/pettingzoo"]
     
     # Add any additional pytest arguments
