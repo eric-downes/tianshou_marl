@@ -10,7 +10,6 @@ from tianshou.algorithm import DQN, Algorithm, ICMOffPolicyWrapper
 from tianshou.algorithm.modelfree.dqn import DiscreteQLearningPolicy
 from tianshou.algorithm.optim import AdamOptimizerFactory
 from tianshou.data import (
-import pytest
     Collector,
     CollectStats,
     PrioritizedVectorReplayBuffer,
@@ -22,6 +21,7 @@ from tianshou.utils import TensorboardLogger
 from tianshou.utils.net.common import MLP, Net
 from tianshou.utils.net.discrete import IntrinsicCuriosityModule
 from tianshou.utils.space_info import SpaceInfo
+import pytest
 
 
 def get_args() -> argparse.Namespace:

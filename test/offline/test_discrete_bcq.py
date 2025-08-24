@@ -13,7 +13,6 @@ from tianshou.algorithm import Algorithm, DiscreteBCQ
 from tianshou.algorithm.imitation.discrete_bcq import DiscreteBCQPolicy
 from tianshou.algorithm.optim import AdamOptimizerFactory
 from tianshou.data import (
-import pytest
     Collector,
     CollectStats,
     PrioritizedVectorReplayBuffer,
@@ -25,6 +24,7 @@ from tianshou.utils import TensorboardLogger
 from tianshou.utils.net.common import Net
 from tianshou.utils.net.discrete import DiscreteActor
 from tianshou.utils.space_info import SpaceInfo
+import pytest
 
 
 def get_args() -> argparse.Namespace:

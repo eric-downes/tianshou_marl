@@ -13,7 +13,6 @@ from tianshou.algorithm import Algorithm, DiscreteCQL
 from tianshou.algorithm.modelfree.qrdqn import QRDQNPolicy
 from tianshou.algorithm.optim import AdamOptimizerFactory
 from tianshou.data import (
-import pytest
     Collector,
     CollectStats,
     PrioritizedVectorReplayBuffer,
@@ -24,6 +23,7 @@ from tianshou.trainer import OfflineTrainerParams
 from tianshou.utils import TensorboardLogger
 from tianshou.utils.net.common import Net
 from tianshou.utils.space_info import SpaceInfo
+import pytest
 
 
 def get_args() -> argparse.Namespace:

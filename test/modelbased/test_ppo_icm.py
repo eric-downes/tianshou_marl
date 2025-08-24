@@ -18,12 +18,12 @@ from tianshou.trainer import OnPolicyTrainerParams
 from tianshou.utils import TensorboardLogger
 from tianshou.utils.net.common import MLP, ActorCritic, Net
 from tianshou.utils.net.discrete import (
-import pytest
     DiscreteActor,
     DiscreteCritic,
     IntrinsicCuriosityModule,
 )
 from tianshou.utils.space_info import SpaceInfo
+import pytest
 
 
 def get_args() -> argparse.Namespace:

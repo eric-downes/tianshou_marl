@@ -18,12 +18,13 @@ from tianshou.trainer import OffPolicyTrainerParams
 from tianshou.utils import TensorboardLogger
 from tianshou.utils.net.common import Net
 from tianshou.utils.net.continuous import (
-import pytest
     ContinuousActorDeterministic,
     ContinuousActorProbabilistic,
     ContinuousCritic,
 )
 from tianshou.utils.space_info import SpaceInfo
+
+import pytest
 
 try:
     import envpool
