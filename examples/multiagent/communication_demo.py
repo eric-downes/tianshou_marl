@@ -18,7 +18,6 @@ import numpy as np
 import torch
 from pettingzoo.butterfly.pistonball_v6 import env as pistonball_env
 
-from tianshou.algorithm import DQN
 from tianshou.algorithm.modelfree.dqn import DiscreteQLearningPolicy
 from tianshou.algorithm.multiagent import (
     CommunicatingPolicy,

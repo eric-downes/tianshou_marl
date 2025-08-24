@@ -319,7 +319,7 @@ class TestIntegration:
         for _ in range(100):
             obs = env.reset()
             batch = Batch(obs=obs)
-            result = wrapper.forward(batch)
+            _ = wrapper.forward(batch)  # Test forward pass works
 
         gc.collect()
         current, peak = tracemalloc.get_traced_memory()

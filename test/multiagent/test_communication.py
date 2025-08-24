@@ -384,13 +384,13 @@ class TestCommunicatingPolicy:
 
         # Test with communication disabled
         policy.set_communication_enabled(False)
-        result1 = policy.forward(batch)
+        _ = policy.forward(batch)
         assert channel.get_buffer_size() == 0
 
         # Test with communication enabled
         policy.actor = actor_with_comm  # Switch to comm-aware actor
         policy.set_communication_enabled(True)
-        result2 = policy.forward(batch)
+        _ = policy.forward(batch)
         assert channel.get_buffer_size() == 1
 
     def test_policy_batch_processing(self):

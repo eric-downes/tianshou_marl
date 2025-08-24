@@ -31,7 +31,7 @@ except ImportError:
 
 def has_ray() -> bool:
     try:
-        import ray
+        import ray  # noqa: F401
 
         return True
     except ImportError:

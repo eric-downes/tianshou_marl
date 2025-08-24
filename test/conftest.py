@@ -24,6 +24,6 @@ def pytest_collection_modifyitems(config, items):
         # Skip PettingZoo tests if pettingzoo is not installed
         if "pettingzoo" in item.nodeid:
             try:
-                import pettingzoo
+                import pettingzoo  # noqa: F401
             except ImportError:
                 item.add_marker(skip_no_env)

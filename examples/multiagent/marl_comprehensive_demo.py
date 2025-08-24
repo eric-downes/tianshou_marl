@@ -22,13 +22,10 @@ import torch
 from pettingzoo.classic.connect_four_v3 import env as connect_four_env
 from pettingzoo.classic.tictactoe_v3 import env as tic_tac_toe_env
 
-from tianshou.algorithm import DQN
 from tianshou.algorithm.modelfree.dqn import DiscreteQLearningPolicy
 from tianshou.algorithm.multiagent import (
-    CTDEPolicy,
     FlexibleMultiAgentPolicyManager,
     QMIXPolicy,
-    SimultaneousTrainer,
 )
 from tianshou.data import Collector, VectorReplayBuffer
 from tianshou.env import DummyVectorEnv
