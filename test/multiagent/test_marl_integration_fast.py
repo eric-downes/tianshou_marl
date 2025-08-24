@@ -175,7 +175,15 @@ class TestFastMARL:
     def test_ctde_basic_functionality(self):
         """Test basic CTDE functionality - fast version."""
         # Simple actor and critic
-        actor = nn.Linear(4, 2)
+        class SimpleActor(nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.fc = nn.Linear(4, 2)
+            
+            def forward(self, obs, state=None):
+                return self.fc(obs), state
+        
+        actor = SimpleActor()
         critic = nn.Linear(8, 1)  # Global state dimension
         
         policy = CTDEPolicy(
@@ -201,11 +209,13 @@ class TestFastMARL:
             terminated=torch.zeros(10, dtype=torch.bool),
             truncated=torch.zeros(10, dtype=torch.bool),
             obs_next=torch.randn(10, 4),
-            global_state=torch.randn(10, 8)  # Global state for critic
+            global_obs=torch.randn(10, 8),  # Global state for critic
+            global_obs_next=torch.randn(10, 8)  # Next global state for critic
         )
         
         losses = policy.learn(batch_train)
-        assert "loss" in losses
+        assert "actor_loss" in losses
+        assert "critic_loss" in losses
         
     def test_global_state_construction(self):
         """Test global state construction - fast version."""
