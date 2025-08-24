@@ -38,7 +38,8 @@ class MockCritic(nn.Module):
     
     def __init__(self, global_obs_dim: int = 12, n_agents: int = 3):
         super().__init__()
-        self.fc = nn.Linear(global_obs_dim, n_agents)  # Q-value per agent
+        # For MADDPG, each critic outputs a single Q-value for the joint state-action
+        self.fc = nn.Linear(global_obs_dim, 1)  # Single Q-value output
         
     def forward(self, global_obs: torch.Tensor):
         """Forward pass returning Q-values."""
@@ -78,16 +79,29 @@ class MockEnvironment:
         return obs, rewards, terms, truncs, infos
 
 
-def create_mock_batch(n_agents: int = 3, batch_size: int = 32, with_global_state: bool = True) -> Batch:
+def create_mock_batch(n_agents: int = 3, batch_size: int = 32, with_global_state: bool = True, 
+                     action_space: spaces.Space = None) -> Batch:
     """Create a mock batch for CTDE training."""
     batch = Batch()
     
     # Individual agent data
     for i in range(n_agents):
         agent_id = f"agent_{i}"
+        
+        # Create actions based on action space type
+        if action_space is None or isinstance(action_space, spaces.Discrete):
+            # Discrete actions - scalar per sample
+            act = torch.randint(0, 2, (batch_size,))
+        elif isinstance(action_space, spaces.Box):
+            # Continuous actions - vector per sample
+            action_dim = action_space.shape[0]
+            act = torch.randn(batch_size, action_dim)
+        else:
+            act = torch.randint(0, 2, (batch_size,))
+        
         agent_batch = Batch(
             obs=torch.randn(batch_size, 4),
-            act=torch.randint(0, 2, (batch_size,)),
+            act=act,
             rew=torch.randn(batch_size),
             terminated=torch.zeros(batch_size, dtype=torch.bool),
             truncated=torch.zeros(batch_size, dtype=torch.bool),
@@ -475,24 +489,27 @@ class TestMADDPG:
         actors = [MockActor() for _ in range(n_agents)]
         critics = [MockCritic() for _ in range(n_agents)]
         
+        action_space = spaces.Box(-1, 1, (2,))
         policy = MADDPGPolicy(
             actors=actors,
             critics=critics,
             observation_space=spaces.Box(-1, 1, (4,)),
-            action_space=spaces.Box(-1, 1, (2,)),
+            action_space=action_space,
             n_agents=n_agents
         )
         
         # Create batch with all agents' observations and actions
-        batch = create_mock_batch(n_agents=n_agents, with_global_state=True)
+        batch = create_mock_batch(n_agents=n_agents, with_global_state=True,
+                                action_space=action_space)
         
         # Critics should use all agents' observations and actions
         all_obs = torch.cat([batch[f"agent_{i}"].obs for i in range(n_agents)], dim=-1)
-        all_actions = torch.cat([batch[f"agent_{i}"].act.unsqueeze(-1) for i in range(n_agents)], dim=-1)
+        # For continuous actions, they're already in the right shape
+        all_actions = torch.cat([batch[f"agent_{i}"].act for i in range(n_agents)], dim=-1)
         
         # Verify critic input dimensions
         critic_input = torch.cat([all_obs, all_actions], dim=-1)
-        assert critic_input.shape[1] == 4 * n_agents + n_agents  # obs + actions
+        assert critic_input.shape[1] == 4 * n_agents + 2 * n_agents  # obs + actions (2D each)
         
     def test_maddpg_learn(self):
         """Test MADDPG learning step."""
@@ -500,15 +517,17 @@ class TestMADDPG:
         actors = [MockActor() for _ in range(n_agents)]
         critics = [MockCritic() for _ in range(n_agents)]
         
+        action_space = spaces.Box(-1, 1, (2,))
         policy = MADDPGPolicy(
             actors=actors,
             critics=critics,
             observation_space=spaces.Box(-1, 1, (4,)),
-            action_space=spaces.Box(-1, 1, (2,)),
+            action_space=action_space,
             n_agents=n_agents
         )
         
-        batch = create_mock_batch(n_agents=n_agents, with_global_state=True)
+        batch = create_mock_batch(n_agents=n_agents, with_global_state=True, 
+                                action_space=action_space)
         
         losses = policy.learn(batch)
         
@@ -534,7 +553,8 @@ class TestIntegration:
         policies = {}
         for agent in env.agents:
             actor = MockActor()
-            critic = MockCritic()
+            # For CTDEPolicy, critic uses global observations only (not actions)
+            critic = MockCritic(global_obs_dim=env.global_obs_dim, n_agents=env.n_agents)
             optim_actor = optim.Adam(actor.parameters())
             optim_critic = optim.Adam(critic.parameters())
             
@@ -589,12 +609,27 @@ class TestIntegration:
             batch = create_mock_batch(n_agents=n_agents, batch_size=1)
             # Flatten for buffer
             flat_batch = Batch()
+            
+            # Add required keys for replay buffer (use agent_0 as primary)
+            # Convert tensors to numpy for replay buffer
+            flat_batch.obs = batch["agent_0"].obs.numpy()
+            flat_batch.act = batch["agent_0"].act.numpy()
+            flat_batch.rew = batch["agent_0"].rew.numpy()
+            flat_batch.obs_next = batch["agent_0"].obs_next.numpy()
+            flat_batch.terminated = batch["agent_0"].terminated.numpy()
+            flat_batch.truncated = batch["agent_0"].truncated.numpy()
+            
+            # Add global state
             for key in ["global_obs", "global_obs_next"]:
                 if key in batch:
-                    flat_batch[key] = batch[key]
+                    flat_batch[key] = batch[key].numpy()
+            
+            # Add all agents' data with prefixes
             for i in range(n_agents):
                 for key in batch[f"agent_{i}"].keys():
-                    flat_batch[f"agent_{i}_{key}"] = batch[f"agent_{i}"][key]
+                    val = batch[f"agent_{i}"][key]
+                    # Convert tensors to numpy
+                    flat_batch[f"agent_{i}_{key}"] = val.numpy() if hasattr(val, 'numpy') else val
             buffer.add(flat_batch)
         
         # Sample and train
@@ -604,13 +639,29 @@ class TestIntegration:
         ma_batch = Batch()
         for key in ["global_obs", "global_obs_next"]:
             if key in sampled:
-                ma_batch[key] = sampled[key]
+                val = sampled[key]
+                # Squeeze the extra dimension from batch_size=1 storage
+                if isinstance(val, np.ndarray) and val.shape[1] == 1:
+                    val = val.squeeze(1)
+                ma_batch[key] = val
         for i in range(n_agents):
             agent_batch = Batch()
-            for key in ["obs", "act", "rew", "obs_next", "terminated"]:
+            for key in ["obs", "act", "rew", "obs_next", "terminated", "truncated"]:
                 field_name = f"agent_{i}_{key}"
                 if field_name in sampled:
-                    agent_batch[key] = sampled[field_name]
+                    val = sampled[field_name]
+                    # Squeeze the extra dimension from batch_size=1 storage
+                    if isinstance(val, np.ndarray) and len(val.shape) > 1 and val.shape[1] == 1:
+                        if key in ["obs", "obs_next"]:
+                            # For observations, squeeze the batch=1 dimension but keep feature dims
+                            val = val.squeeze(1)
+                        elif key in ["act", "rew", "terminated", "truncated"]:
+                            # For scalars, fully squeeze
+                            val = val.squeeze()
+                    agent_batch[key] = val
+                elif key == "truncated":
+                    # Add truncated if missing (for compatibility)
+                    agent_batch[key] = np.zeros_like(sampled[f"agent_{i}_terminated"])
             ma_batch[f"agent_{i}"] = agent_batch
         
         losses = policy.learn(ma_batch)
@@ -660,7 +711,7 @@ class TestIntegration:
                 # Decentralized execution
                 batch = Batch()
                 for i, agent in enumerate(env.agents):
-                    batch[agent] = Batch(obs=torch.tensor(obs[agent]).unsqueeze(0))
+                    batch[agent] = Batch(obs=torch.tensor(obs[agent], dtype=torch.float32).unsqueeze(0))
                 
                 actions = policy.forward(batch)
                 

@@ -107,6 +107,13 @@ class MATrainer:
         for agent_id in self.policy_manager.policies.keys():
             if agent_id in batch:
                 agent_batch = batch[agent_id]
+                
+                # Add global state if present
+                if hasattr(batch, 'global_obs'):
+                    agent_batch.global_obs = batch.global_obs
+                if hasattr(batch, 'global_obs_next'):
+                    agent_batch.global_obs_next = batch.global_obs_next
+                    
                 policy = self.policy_manager.policies[agent_id]
                 losses[agent_id] = policy.learn(agent_batch)
                 
@@ -136,6 +143,13 @@ class MATrainer:
         # Train only current agent
         if current_agent in batch:
             agent_batch = batch[current_agent]
+            
+            # Add global state if present
+            if hasattr(batch, 'global_obs'):
+                agent_batch.global_obs = batch.global_obs
+            if hasattr(batch, 'global_obs_next'):
+                agent_batch.global_obs_next = batch.global_obs_next
+                
             policy = self.policy_manager.policies[current_agent]
             losses[current_agent] = policy.learn(agent_batch)
         
@@ -303,6 +317,13 @@ class SimultaneousTrainer(MATrainer):
                 
             if agent_id in batch:
                 agent_batch = batch[agent_id]
+                
+                # Add global state if present in the batch
+                if hasattr(batch, 'global_obs'):
+                    agent_batch.global_obs = batch.global_obs
+                if hasattr(batch, 'global_obs_next'):
+                    agent_batch.global_obs_next = batch.global_obs_next
+                    
                 # Get policy for this agent
                 if self.policy_manager.mode == "shared":
                     policy = self.policy_manager.policies["shared"]

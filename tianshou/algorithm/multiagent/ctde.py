@@ -645,6 +645,15 @@ class QMIXPolicy(Policy):
                     q_values = actor_out[0]
                 else:
                     q_values = actor_out
+                
+                # Ensure q_values has the right shape for gathering
+                if q_values.dim() == 1:
+                    # If q_values is 1D, it's likely a single Q-value per sample
+                    # For discrete actions, we need Q-values for each action
+                    q_values = q_values.unsqueeze(-1)
+                
+                
+                # For discrete actions, gather the Q-value for the taken action
                 q_values_selected = q_values.gather(1, act.unsqueeze(-1))
                 q_values_list.append(q_values_selected)
                 
@@ -831,7 +840,27 @@ class MADDPGPolicy(Policy):
                 if other_id in batch:
                     other_batch = batch[other_id]
                     all_obs.append(to_torch(other_batch.obs, device=self.device))
-                    all_actions.append(to_torch(other_batch.act, device=self.device))
+                    
+                    # Get actions and ensure proper dimensions
+                    act_tensor = to_torch(other_batch.act, device=self.device)
+                    # For continuous actions, ensure 2D shape [batch, action_dim]
+                    if isinstance(self.action_space, spaces.Box):
+                        if act_tensor.dim() == 1:
+                            # Check if it's a batch of scalar actions or needs reshaping
+                            batch_size = all_obs[-1].shape[0]
+                            action_dim = self.action_space.shape[0]
+                            if act_tensor.shape[0] == batch_size * action_dim:
+                                # Reshape flattened actions back to [batch, action_dim]
+                                act_tensor = act_tensor.view(batch_size, action_dim)
+                            elif act_tensor.shape[0] == batch_size:
+                                # Single action dimension, add dimension
+                                act_tensor = act_tensor.unsqueeze(-1)
+                        # Already 2D, keep as is
+                    else:
+                        # Discrete actions
+                        if act_tensor.dim() == 1:
+                            act_tensor = act_tensor.unsqueeze(-1)
+                    all_actions.append(act_tensor)
                     all_obs_next.append(to_torch(other_batch.obs_next, device=self.device))
                     
                     # Get next actions from target actor
@@ -844,23 +873,11 @@ class MADDPGPolicy(Policy):
             
             # Concatenate all observations and actions for centralized critic
             all_obs_concat = torch.cat(all_obs, dim=-1)
-            # Ensure actions have proper dimensions
-            all_actions_formatted = []
-            for act in all_actions:
-                if act.dim() == 1:
-                    all_actions_formatted.append(act.unsqueeze(-1))
-                else:
-                    all_actions_formatted.append(act)
-            all_actions_concat = torch.cat(all_actions_formatted, dim=-1)
+            # Actions are already properly formatted when added to all_actions
+            all_actions_concat = torch.cat(all_actions, dim=-1)
             all_obs_next_concat = torch.cat(all_obs_next, dim=-1)
-            # Format next actions too
-            all_actions_next_formatted = []
-            for act in all_actions_next:
-                if act.dim() == 1:
-                    all_actions_next_formatted.append(act.unsqueeze(-1))
-                else:
-                    all_actions_next_formatted.append(act)
-            all_actions_next_concat = torch.cat(all_actions_next_formatted, dim=-1)
+            # Next actions should already have proper shape from actors
+            all_actions_next_concat = torch.cat(all_actions_next, dim=-1)
             
             # Critic update
             agent_batch = batch[agent_id]
