@@ -286,7 +286,7 @@ def train_agent(
             policy.set_eps(args.eps_test)
     
     # Start training
-    result = OffpolicyTrainer(
+    result = OffPolicyTrainer(
         policy=policy,
         train_collector=train_collector,
         test_collector=test_collector,

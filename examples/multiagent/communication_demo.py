@@ -239,7 +239,7 @@ def train_communicating_agents(args: argparse.Namespace = get_args()) -> dict:
             policy.set_eps(args.eps_test)
     
     # Start training
-    result = OffpolicyTrainer(
+    result = OffPolicyTrainer(
         policy=policy,
         train_collector=train_collector,
         test_collector=test_collector,
@@ -262,7 +262,7 @@ def train_communicating_agents(args: argparse.Namespace = get_args()) -> dict:
 if __name__ == "__main__":
     args = get_args()
     
-    print(f"Communication Demo")
+    print("Communication Demo")
     print(f"Communication: {'Enabled' if args.with_communication else 'Disabled'}")
     print(f"Device: {args.device}")
     print(f"Message dimension: {args.message_dim}")

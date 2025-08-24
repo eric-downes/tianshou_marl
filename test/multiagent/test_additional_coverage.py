@@ -180,12 +180,12 @@ class TestDictObservationCoverage:
     def test_auto_preprocessor_detection(self):
         """Test automatic preprocessor detection for dict observations."""
         from tianshou.env.dict_observation import DictObservationWrapper
+        from unittest.mock import Mock
         
         mock_env = Mock()
         mock_space = Mock()
         
         # Test with image-like observation
-        from unittest.mock import Mock
         image_space = Mock()
         image_space.shape = (84, 84, 3)  # Image-like shape
         
