@@ -516,7 +516,7 @@ class SelfPlayTrainer(MATrainer):
             oldest = self.opponent_pool.pop(0)
             if id(oldest) in self.opponent_win_rates:
                 del self.opponent_win_rates[id(oldest)]
-        
+
         return snapshot
 
     def _sample_opponent(self) -> Policy | None:
