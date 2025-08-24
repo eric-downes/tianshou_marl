@@ -78,6 +78,14 @@ class EnhancedPettingZooEnv(PettingZooEnv):
         else:
             # Use parent class initialization for AEC
             super().__init__(env)
+            self.is_parallel = False
+            self._num_agents = len(self.agents)  # Store as private attribute
+            self.metadata = getattr(env, 'metadata', {})
+    
+    @property
+    def num_agents(self):
+        """Number of agents in the environment."""
+        return self._num_agents
     
     def _init_parallel(self, env: ParallelEnv):
         """Initialize for parallel environment."""
@@ -85,6 +93,11 @@ class EnhancedPettingZooEnv(PettingZooEnv):
         self.agents = env.possible_agents
         self.agent_idx = {agent: i for i, agent in enumerate(self.agents)}
         self.rewards = [0] * len(self.agents)
+        
+        # Add attributes for compatibility with tests
+        self.is_parallel = True
+        self._num_agents = len(self.agents)  # Store as private attribute
+        self.metadata = getattr(env, 'metadata', {})
         
         # For parallel env, get spaces from observation_spaces dict
         first_agent = self.agents[0]

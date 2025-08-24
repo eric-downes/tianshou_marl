@@ -207,6 +207,46 @@ class MATrainer:
         """
         self.step_count = state.get("step_count", 0)
         self.training_mode = state.get("training_mode", "simultaneous")
+    
+    def save_checkpoint(self, path: str):
+        """Save trainer checkpoint to file.
+        
+        Args:
+            path: Path to save checkpoint
+        """
+        import torch
+        checkpoint = {
+            "trainer_state": self.state_dict(),
+            "policies": {}
+        }
+        
+        # Save each policy's state
+        for agent_id, policy in self.policy_manager.policies.items():
+            if hasattr(policy, 'state_dict'):
+                checkpoint["policies"][agent_id] = policy.state_dict()
+        
+        torch.save(checkpoint, path)
+    
+    def load_checkpoint(self, path: str):
+        """Load trainer checkpoint from file.
+        
+        Args:
+            path: Path to checkpoint file
+        """
+        import torch
+        checkpoint = torch.load(path)
+        
+        # Load trainer state
+        if "trainer_state" in checkpoint:
+            self.load_state_dict(checkpoint["trainer_state"])
+        
+        # Load policy states
+        if "policies" in checkpoint:
+            for agent_id, policy_state in checkpoint["policies"].items():
+                if agent_id in self.policy_manager.policies:
+                    policy = self.policy_manager.policies[agent_id]
+                    if hasattr(policy, 'load_state_dict'):
+                        policy.load_state_dict(policy_state)
 
 
 class SimultaneousTrainer(MATrainer):

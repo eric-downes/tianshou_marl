@@ -86,6 +86,23 @@ class FlexibleMultiAgentPolicyManager(MultiAgentPolicy):
         # Store original policies for reference
         self._original_policies = policies
         
+        # Create policy_mapping attribute for compatibility
+        self.policy_mapping = self.policy_map
+        
+        # Create policies dict with unique policies for compatibility
+        if self.mode == "shared":
+            self.policies = {"shared": next(iter(self.policy_map.values()))}
+        elif self.mode == "grouped":
+            self.policies = {group: self.policy_map[self.agent_groups[group][0]] 
+                           for group in self.agent_groups.keys()}
+        else:
+            # For independent and custom, create dict with unique policies
+            unique_policies = {}
+            for agent, policy in self.policy_map.items():
+                if policy not in unique_policies.values():
+                    unique_policies[agent] = policy
+            self.policies = unique_policies
+        
     def _validate_config(self, policies):
         """Validate configuration based on mode."""
         if self.mode == "independent":

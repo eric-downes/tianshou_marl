@@ -78,6 +78,7 @@ class CTDEPolicy(Policy):
         self.enable_global_info = enable_global_info
         self.discount_factor = discount_factor
         self.device = "cpu"  # Default device
+        self.tau = kwargs.get('tau', 0.005)  # Soft update parameter
         
     def forward(self, batch: Batch, state: Optional[Any] = None, **kwargs) -> Batch:
         """Forward pass for action selection (decentralized execution).
@@ -96,10 +97,22 @@ class CTDEPolicy(Policy):
         obs = to_torch(batch.obs, device=self.device)
         
         # Decentralized execution - use only local observations
-        if hasattr(self.actor, 'forward'):
-            actions, state = self.actor(obs, state)
+        # Handle different actor signatures
+        import inspect
+        sig = inspect.signature(self.actor.forward if hasattr(self.actor, 'forward') else self.actor.__call__)
+        
+        # Check if actor expects state parameter
+        if len(sig.parameters) > 1 and 'state' in sig.parameters:
+            result = self.actor(obs, state)
         else:
-            actions = self.actor(obs)
+            result = self.actor(obs)
+        
+        # Handle different return types
+        if isinstance(result, tuple):
+            actions, state = result
+        else:
+            actions = result
+            # state remains as passed in
             
         return Batch(act=actions, state=state)
     
@@ -183,6 +196,16 @@ class CTDEPolicy(Policy):
             "critic_loss": critic_loss.item(),
         }
     
+    def soft_update_targets(self):
+        """Soft update target networks using tau parameter."""
+        if hasattr(self, 'actor_target'):
+            for param, target_param in zip(self.actor.parameters(), self.actor_target.parameters()):
+                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+        
+        if hasattr(self, 'critic_target'):
+            for param, target_param in zip(self.critic.parameters(), self.critic_target.parameters()):
+                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+    
     def _build_global_state(self, batch: Batch) -> torch.Tensor:
         """Construct global state from all agents' observations.
         
@@ -207,6 +230,7 @@ class GlobalStateConstructor(nn.Module):
     
     Supports multiple construction modes:
     - concatenate: Simple concatenation of all observations
+    - mean: Mean aggregation of all observations
     - attention: Attention-based aggregation
     - graph: Graph neural network aggregation
     - custom: User-defined function
@@ -214,7 +238,7 @@ class GlobalStateConstructor(nn.Module):
     
     def __init__(
         self,
-        mode: Literal["concatenate", "attention", "graph", "custom"] = "concatenate",
+        mode: Literal["concatenate", "mean", "attention", "graph", "custom"] = "concatenate",
         obs_dim: Optional[int] = None,
         n_agents: Optional[int] = None,
         hidden_dim: int = 64,
@@ -266,6 +290,12 @@ class GlobalStateConstructor(nn.Module):
             # Simple concatenation
             obs_list = [obs for obs in observations.values()]
             return torch.cat(obs_list, dim=-1)
+            
+        elif self.mode == "mean":
+            # Mean aggregation
+            obs_list = [obs for obs in observations.values()]
+            obs_stack = torch.stack(obs_list, dim=0)  # [n_agents, batch, obs_dim]
+            return obs_stack.mean(dim=0)  # [batch, obs_dim]
             
         elif self.mode == "attention":
             # Stack observations for attention
