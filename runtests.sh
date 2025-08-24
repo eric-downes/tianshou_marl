@@ -2,6 +2,9 @@
 # Test runner script for Tianshou MARL
 # Note: argparse conflicts have been resolved, so we can now use pytest directly
 
+# Suppress pygame and pkg_resources warnings at import time
+export PYTHONWARNINGS="ignore::DeprecationWarning:pygame.pkgdata,ignore::DeprecationWarning:pkg_resources"
+
 echo "Running Tianshou tests..."
 echo "========================="
 echo ""
