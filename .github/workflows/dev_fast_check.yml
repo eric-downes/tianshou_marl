@@ -46,9 +46,9 @@ jobs:
       
       - name: Ultra-minimal lint (critical errors only)
         run: |
-          # Install ruff if needed and run minimal check
-          poetry run pip install ruff || pip install ruff
-          ruff check . --select F --ignore F401,F841 || exit 1
+          # Install ruff and run minimal check
+          poetry run pip install ruff
+          poetry run ruff check . --select F --ignore F401,F841 || exit 1
           echo "✅ No critical syntax/import errors"
       
       - name: Fast unit tests (< 30 seconds)
