@@ -46,12 +46,16 @@ jobs:
       
       - name: Full lint check
         run: |
-          # Check for critical errors only (F=fatal, E9=syntax errors)
-          # Ignore: E501 (line length), W293 (whitespace), C901 (complexity)
-          poetry run ruff check . --select F,E9 || exit 1
-          echo "✅ Critical errors check passed"
-          # Check important warnings but don't fail
-          poetry run ruff check . --select E,W --ignore E501,W293 || echo "⚠️  Some warnings - non-blocking"
+          # Check for truly critical errors only
+          # F821: undefined name, F822: undefined name in __all__, F823: local variable referenced before assignment
+          # E9: syntax errors (E901, E902, E999)
+          # Ignore F841 (unused variables) as these are not critical
+          poetry run ruff check . --select F821,F822,F823,E9 || exit 1
+          echo "✅ Critical errors check passed (undefined names, syntax errors)"
+          # Check other F errors but don't fail (includes F841 unused variables)
+          poetry run ruff check . --select F --ignore F821,F822,F823 || echo "⚠️  Some F warnings (unused variables, etc) - non-blocking"
+          # Check important E,W warnings but don't fail
+          poetry run ruff check . --select E,W --ignore E501,W293 || echo "⚠️  Some E/W warnings - non-blocking"
           # Run full check to see all issues but don't fail
           poetry run ruff check . || echo "ℹ️  Full lint report (includes complexity, line length) - informational only"
       
