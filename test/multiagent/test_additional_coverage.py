@@ -149,15 +149,31 @@ class TestEnhancedPettingZooEnvCoverage:
     def test_env_explicit_mode(self):
         """Test explicit mode setting."""
         from tianshou.env.enhanced_pettingzoo_env import EnhancedPettingZooEnv
+        from gymnasium import spaces
         
-        mock_env = Mock()
-        mock_env.agents = ["agent_0"]
-        mock_env.possible_agents = ["agent_0"]
+        # For parallel mode, need observation_spaces dict
+        mock_env_parallel = Mock()
+        mock_env_parallel.agents = ["agent_0"]
+        mock_env_parallel.possible_agents = ["agent_0"]
+        mock_obs_space = spaces.Box(low=0, high=1, shape=(4,))
+        mock_act_space = spaces.Discrete(2)
+        mock_env_parallel.observation_spaces = {"agent_0": mock_obs_space}
+        mock_env_parallel.action_spaces = {"agent_0": mock_act_space}
         
-        env_parallel = EnhancedPettingZooEnv(mock_env, mode="parallel")
+        env_parallel = EnhancedPettingZooEnv(mock_env_parallel, mode="parallel")
         assert env_parallel.mode == "parallel"
         
-        env_aec = EnhancedPettingZooEnv(mock_env, mode="aec")
+        # For AEC mode, need observation_space as method
+        mock_env_aec = Mock()
+        mock_env_aec.agents = ["agent_0"]
+        mock_env_aec.possible_agents = ["agent_0"]
+        mock_env_aec.observation_space = Mock(return_value=mock_obs_space)
+        mock_env_aec.action_space = Mock(return_value=mock_act_space)
+        mock_env_aec.agent_selection = "agent_0"
+        mock_env_aec.reset = Mock()
+        mock_env_aec.last = Mock(return_value=(np.zeros(4), 0, False, False, {}))
+        
+        env_aec = EnhancedPettingZooEnv(mock_env_aec, mode="aec")
         assert env_aec.mode == "aec"
 
 
@@ -175,8 +191,12 @@ class TestDictObservationCoverage:
             "vector": spaces.Box(low=-1, high=1, shape=(10,), dtype=np.float32),
         })
         
-        wrapper = DictObservationWrapper(obs_space)
+        # DictObservationWrapper needs a policy to wrap
+        mock_policy = Mock()
+        wrapper = DictObservationWrapper(mock_policy, obs_space)
         assert wrapper is not None
+        assert wrapper.policy == mock_policy
+        assert wrapper.observation_space == obs_space
 
     def test_auto_preprocessor_detection(self):
         """Test automatic preprocessor detection for dict observations."""
@@ -188,8 +208,10 @@ class TestDictObservationCoverage:
             "image": spaces.Box(low=0, high=255, shape=(84, 84, 3), dtype=np.uint8)
         })
         
-        wrapper = DictObservationWrapper(obs_space)
+        mock_policy = Mock()
+        wrapper = DictObservationWrapper(mock_policy, obs_space)
         assert wrapper is not None
+        assert wrapper.preprocessor is not None
 
 
 class TestCommunicationPerformance:
@@ -206,11 +228,11 @@ class TestCommunicationPerformance:
         )
         
         large_message = torch.randn(1, 512)
-        # Use correct method name
+        # Use correct method signature - target_id not target_agents
         channel.send(
             sender_id="agent_0",
             message=large_message,
-            target_agents=None  # Broadcast to all
+            target_id=None  # Broadcast to all
         )
         
         for i in range(1, 5):
@@ -236,7 +258,7 @@ class TestCommunicationPerformance:
             channel.send(
                 sender_id=agent_id,
                 message=message,
-                target_agents=None
+                target_id=None
             )
         
         # Check that each agent can receive messages
@@ -262,13 +284,23 @@ class TestPolicyManagerRobustness:
     def test_policy_manager_mode_switching(self):
         """Test dynamic mode switching in policy manager."""
         from tianshou.algorithm.multiagent.flexible_policy import FlexibleMultiAgentPolicyManager
-        from tianshou.algorithm.algorithm_base import Policy
+        from gymnasium import spaces
         
         mock_env = Mock()
         mock_env.agents = ["agent_0", "agent_1"]
         
-        # Create a proper policy dict instead of Mock
-        mock_policy = Mock(spec=Policy)
+        # Create a proper torch.nn.Module-based policy
+        class MockPolicy(nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.action_space = spaces.Discrete(2)
+                self.observation_space = spaces.Box(low=0, high=1, shape=(4,))
+                self.fc = nn.Linear(4, 2)  # Dummy layer
+            
+            def forward(self, x):
+                return self.fc(x)
+        
+        mock_policy = MockPolicy()
         policies = {"agent_0": mock_policy, "agent_1": mock_policy}
         
         manager = FlexibleMultiAgentPolicyManager(
@@ -286,10 +318,23 @@ class TestTrainerRobustness:
         """Test various trainer initialization patterns."""
         from tianshou.algorithm.multiagent.training_coordinator import SimultaneousTrainer
         from tianshou.algorithm.multiagent.flexible_policy import FlexibleMultiAgentPolicyManager
+        from gymnasium import spaces
         
         mock_env = Mock()
         mock_env.agents = ["agent_0", "agent_1"]
-        mock_policy = Mock()
+        
+        # Create a proper torch.nn.Module-based policy
+        class MockPolicy(nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.action_space = spaces.Discrete(2)
+                self.observation_space = spaces.Box(low=0, high=1, shape=(4,))
+                self.fc = nn.Linear(4, 2)  # Dummy layer
+            
+            def forward(self, x):
+                return self.fc(x)
+        
+        mock_policy = MockPolicy()
         policies = {"agent_0": mock_policy, "agent_1": mock_policy}
         
         policy_manager = FlexibleMultiAgentPolicyManager(
@@ -298,9 +343,7 @@ class TestTrainerRobustness:
         
         trainer = SimultaneousTrainer(
             policy_manager=policy_manager,
-            envs=mock_env,
-            buffer=Mock(),
-            update_frequency=10
+            agent_train_freq={"agent_0": 10, "agent_1": 10}
         )
         
         assert trainer is not None
@@ -309,25 +352,36 @@ class TestTrainerRobustness:
         """Test training frequency parameter validation."""
         from tianshou.algorithm.multiagent.training_coordinator import SimultaneousTrainer
         from tianshou.algorithm.multiagent.flexible_policy import FlexibleMultiAgentPolicyManager
+        from gymnasium import spaces
         
         mock_env = Mock()
         mock_env.agents = ["agent_0"]
-        mock_policy = Mock()
+        
+        # Create a proper torch.nn.Module-based policy
+        class MockPolicy(nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.action_space = spaces.Discrete(2)
+                self.observation_space = spaces.Box(low=0, high=1, shape=(4,))
+                self.fc = nn.Linear(4, 2)  # Dummy layer
+            
+            def forward(self, x):
+                return self.fc(x)
+        
+        mock_policy = MockPolicy()
         policies = {"agent_0": mock_policy}
         
         policy_manager = FlexibleMultiAgentPolicyManager(
             policies, mock_env, mode="independent"
         )
         
-        # Test various frequency values
+        # Test various frequency values using agent_train_freq
         for freq in [1, 5, 10, 100]:
             trainer = SimultaneousTrainer(
                 policy_manager=policy_manager,
-                envs=mock_env,
-                buffer=Mock(),
-                update_frequency=freq
+                agent_train_freq={"agent_0": freq}
             )
-            assert trainer.update_frequency == freq
+            assert trainer.agent_train_freq["agent_0"] == freq
 
 
 class TestIntegrationRobustness:
@@ -351,27 +405,28 @@ class TestIntegrationRobustness:
         # Test they work together
         obs = torch.randn(5, 64)
         message = encoder(obs)
-        channel.send("a0", message, target_agents=None)
+        channel.send("a0", message, target_id=None)
         
         received = channel.receive("a1")
         if received:  # May or may not have messages
             decoded = decoder(received)
-            assert decoded.shape[1] == 16
+            # decoder returns a 1D tensor when aggregating messages
+            assert decoded.shape[-1] == 16
 
     def test_batch_size_consistency(self):
         """Test that all components handle consistent batch sizes."""
         from tianshou.algorithm.multiagent.ctde import GlobalStateConstructor
         from tianshou.algorithm.multiagent.communication import MessageEncoder
         
-        # Test GlobalStateConstructor
-        constructor = GlobalStateConstructor(mode="concat")
+        # Test GlobalStateConstructor - use build method
+        constructor = GlobalStateConstructor(mode="concatenate")
         
         for batch_size in [1, 8, 16]:
             obs_dict = {
                 "agent_0": torch.randn(batch_size, 4),
                 "agent_1": torch.randn(batch_size, 6)
             }
-            result = constructor(obs_dict)
+            result = constructor.build(obs_dict)  # Uses build method
             assert result.shape[0] == batch_size
             assert result.shape[1] == 10  # 4 + 6
                     

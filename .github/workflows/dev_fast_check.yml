@@ -63,16 +63,12 @@ jobs:
       
       - name: Run fast MARL tests
         run: |
-          # Run only the passing tests to verify basic functionality
-          # We'll fix the failing tests separately  
-          pytest test/multiagent/test_additional_coverage.py::TestCentralizedCriticCoverage \
-                 test/multiagent/test_additional_coverage.py::TestDecentralizedActorCoverage \
-                 test/multiagent/test_additional_coverage.py::TestEnhancedPettingZooEnvCoverage::test_env_mode_detection \
-                 test/multiagent/test_additional_coverage.py::TestPolicyManagerRobustness::test_policy_manager_error_handling \
+          # Run all fast MARL tests - they should all pass now
+          pytest test/multiagent/test_additional_coverage.py \
                  -v \
                  -x \
-                 || echo "⚠️ Some fast tests failed - check logs"
-          echo "✅ Fast MARL test suite completed"
+                 || exit 1
+          echo "✅ All fast MARL tests passed"
         timeout-minutes: 2
         env:
           PYTHONPATH: .
