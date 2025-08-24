@@ -33,9 +33,7 @@ class MapTrainingStats(TrainingStats):
         train_time_aggregator: Literal["min", "max", "mean"] = "max",
     ) -> None:
         self._agent_id_to_stats = agent_id_to_stats
-        train_times = [
-            agent_stats.train_time for agent_stats in agent_id_to_stats.values()
-        ]
+        train_times = [agent_stats.train_time for agent_stats in agent_id_to_stats.values()]
         match train_time_aggregator:
             case "max":
                 aggr_function = max
@@ -101,9 +99,7 @@ class MultiAgentPolicy(Policy):
             agent_index = np.nonzero(batch.obs.agent_id == agent_id)[0]
             if len(agent_index) == 0:
                 continue
-            act[agent_index] = policy.add_exploration_noise(
-                act[agent_index], batch[agent_index]
-            )
+            act[agent_index] = policy.add_exploration_noise(act[agent_index], batch[agent_index])
         return act
 
     def forward(  # type: ignore
@@ -158,9 +154,7 @@ class MultiAgentPolicy(Policy):
             if not hasattr(tmp_batch.obs, "mask"):
                 if hasattr(tmp_batch.obs, "obs"):
                     tmp_batch.obs = tmp_batch.obs.obs
-                if hasattr(tmp_batch, "obs_next") and hasattr(
-                    tmp_batch.obs_next, "obs"
-                ):
+                if hasattr(tmp_batch, "obs_next") and hasattr(tmp_batch.obs_next, "obs"):
                     tmp_batch.obs_next = tmp_batch.obs_next.obs
             out = policy(
                 batch=tmp_batch,
@@ -168,18 +162,10 @@ class MultiAgentPolicy(Policy):
                 **kwargs,
             )
             act = out.act
-            each_state = (
-                out.state
-                if (hasattr(out, "state") and out.state is not None)
-                else Batch()
-            )
+            each_state = out.state if (hasattr(out, "state") and out.state is not None) else Batch()
             results.append((True, agent_index, out, act, each_state))
         holder: Batch = Batch.cat(
-            [
-                {"act": act}
-                for (has_data, agent_index, out, act, each_state) in results
-                if has_data
-            ],
+            [{"act": act} for (has_data, agent_index, out, act, each_state) in results if has_data],
         )
         state_dict, out_dict = {}, {}
         for (agent_id, _), (has_data, agent_index, out, act, state) in zip(
@@ -207,20 +193,14 @@ class MARLDispatcher(Generic[TAlgorithm]):
 
     def __init__(self, algorithms: list[TAlgorithm], env: PettingZooEnv):
         agent_ids = env.agents
-        assert len(algorithms) == len(
-            agent_ids
-        ), "One policy must be assigned for each agent."
-        self.algorithms: dict[str | int, TAlgorithm] = dict(
-            zip(agent_ids, algorithms, strict=True)
-        )
+        assert len(algorithms) == len(agent_ids), "One policy must be assigned for each agent."
+        self.algorithms: dict[str | int, TAlgorithm] = dict(zip(agent_ids, algorithms, strict=True))
         """maps agent_id to the corresponding algorithm."""
         self.agent_idx = env.agent_idx
         """maps agent_id to 0-based index."""
 
     def create_policy(self) -> MultiAgentPolicy:
-        return MultiAgentPolicy(
-            {agent_id: a.policy for agent_id, a in self.algorithms.items()}
-        )
+        return MultiAgentPolicy({agent_id: a.policy for agent_id, a in self.algorithms.items()})
 
     def dispatch_process_fn(
         self,
@@ -258,9 +238,7 @@ class MARLDispatcher(Generic[TAlgorithm]):
             if not hasattr(tmp_batch.obs, "mask"):
                 if hasattr(tmp_batch.obs, "obs"):
                     tmp_batch.obs = tmp_batch.obs.obs
-                if hasattr(tmp_batch, "obs_next") and hasattr(
-                    tmp_batch.obs_next, "obs"
-                ):
+                if hasattr(tmp_batch, "obs_next") and hasattr(tmp_batch.obs_next, "obs"):
                     tmp_batch.obs_next = tmp_batch.obs_next.obs
             results[agent] = algorithm._preprocess_batch(tmp_batch, buffer, tmp_indice)
         if has_rew:  # restore from save_rew
@@ -270,9 +248,7 @@ class MARLDispatcher(Generic[TAlgorithm]):
     def dispatch_update_with_batch(
         self,
         batch: MAPRolloutBatchProtocol,
-        algorithm_update_with_batch_fn: Callable[
-            [TAlgorithm, RolloutBatchProtocol], TrainingStats
-        ],
+        algorithm_update_with_batch_fn: Callable[[TAlgorithm, RolloutBatchProtocol], TrainingStats],
     ) -> MapTrainingStats:
         """Dispatch the respective subset of the batch data to each algorithm.
 
@@ -302,9 +278,7 @@ class MultiAgentOffPolicyAlgorithm(OffPolicyAlgorithm[MultiAgentPolicy]):
         :param algorithms: a list of off-policy algorithms.
         :param env: the multi-agent RL environment
         """
-        self._dispatcher: MARLDispatcher[OffPolicyAlgorithm] = MARLDispatcher(
-            algorithms, env
-        )
+        self._dispatcher: MARLDispatcher[OffPolicyAlgorithm] = MARLDispatcher(algorithms, env)
         super().__init__(
             policy=self._dispatcher.create_policy(),
         )
@@ -328,9 +302,7 @@ class MultiAgentOffPolicyAlgorithm(OffPolicyAlgorithm[MultiAgentPolicy]):
     ) -> MapTrainingStats:
         batch = cast(MAPRolloutBatchProtocol, batch)
 
-        def update(
-            algorithm: OffPolicyAlgorithm, data: RolloutBatchProtocol
-        ) -> TrainingStats:
+        def update(algorithm: OffPolicyAlgorithm, data: RolloutBatchProtocol) -> TrainingStats:
             return algorithm._update_with_batch(data)
 
         return self._dispatcher.dispatch_update_with_batch(batch, update)
@@ -349,9 +321,7 @@ class MultiAgentOnPolicyAlgorithm(OnPolicyAlgorithm[MultiAgentPolicy]):
         :param algorithms: a list of off-policy algorithms.
         :param env: the multi-agent RL environment
         """
-        self._dispatcher: MARLDispatcher[OnPolicyAlgorithm] = MARLDispatcher(
-            algorithms, env
-        )
+        self._dispatcher: MARLDispatcher[OnPolicyAlgorithm] = MARLDispatcher(algorithms, env)
         super().__init__(
             policy=self._dispatcher.create_policy(),
         )
@@ -374,9 +344,7 @@ class MultiAgentOnPolicyAlgorithm(OnPolicyAlgorithm[MultiAgentPolicy]):
     ) -> MapTrainingStats:
         batch = cast(MAPRolloutBatchProtocol, batch)
 
-        def update(
-            algorithm: OnPolicyAlgorithm, data: RolloutBatchProtocol
-        ) -> TrainingStats:
+        def update(algorithm: OnPolicyAlgorithm, data: RolloutBatchProtocol) -> TrainingStats:
             return algorithm._update_with_batch(data, batch_size, repeat)
 
         return self._dispatcher.dispatch_update_with_batch(batch, update)
