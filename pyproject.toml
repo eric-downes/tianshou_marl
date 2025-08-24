@@ -195,6 +195,9 @@ ignore = [
     "D406", # section name should end with newline
     "RUF005", # consider unpacking instead of concatenation
     "UP032", # use f-string instead of format
+    "PLW1641", # Object does not implement __hash__ method (core tianshou structures)
+    "E721", # Use is/is not for type comparisons (core tianshou data handling)
+    "SIM103", # Return the condition directly (core tianshou logic)
 ]
 unfixable = [
     "F841", # unused variable. ruff keeps the call, but mostly we want to get rid of it all
