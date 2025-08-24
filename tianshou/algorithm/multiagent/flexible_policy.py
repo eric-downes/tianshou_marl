@@ -51,7 +51,7 @@ class FlexibleMultiAgentPolicyManager(MultiAgentPolicy):
     def __init__(
         self,
         policies: Policy | list[Policy] | dict[str, Policy],
-        env,  # PettingZooEnv type
+        env: Any,  # PettingZooEnv type
         mode: Literal["independent", "shared", "grouped", "custom"] = "independent",
         agent_groups: dict[str, list[str]] | None = None,
         policy_mapping_fn: Callable[[str], str] | None = None,
@@ -85,7 +85,7 @@ class FlexibleMultiAgentPolicyManager(MultiAgentPolicy):
         self.policy_map = self._build_policy_map(policies, env.agents)
 
         # Initialize parent class with the policy map
-        super().__init__(policies=self.policy_map)
+        super().__init__(policies=self.policy_map)  # type: ignore[arg-type]
 
         # Store original policies for reference
         self._original_policies = policies
@@ -103,13 +103,13 @@ class FlexibleMultiAgentPolicyManager(MultiAgentPolicy):
             }
         else:
             # For independent and custom, create dict with unique policies
-            unique_policies = {}
+            unique_policies: dict[str, Policy] = {}
             for agent, policy in self.policy_map.items():
                 if policy not in unique_policies.values():
                     unique_policies[agent] = policy
-            self.policies = unique_policies
+            self.policies = unique_policies  # type: ignore[assignment]
 
-    def _validate_config(self, policies):
+    def _validate_config(self, policies: Policy | list[Policy] | dict[str, Policy]) -> None:
         """Validate configuration based on mode."""
         if self.mode == "independent":
             if isinstance(policies, Policy):
@@ -131,7 +131,7 @@ class FlexibleMultiAgentPolicyManager(MultiAgentPolicy):
                     "Custom mode requires policy_mapping_fn to be specified"
                 )
 
-    def _build_policy_map(self, policies, agents) -> dict[str, Policy]:
+    def _build_policy_map(self, policies: Policy | list[Policy] | dict[str, Policy], agents: list[str]) -> dict[str, Policy]:
         """Build agent-to-policy mapping based on configuration mode."""
         if self.mode == "shared":
             # All agents use the same policy
@@ -172,6 +172,8 @@ class FlexibleMultiAgentPolicyManager(MultiAgentPolicy):
             # Use custom mapping function
             if not isinstance(policies, dict):
                 raise ValueError("Custom mode requires dict of policies")
+            if self.policy_mapping_fn is None:
+                raise ValueError("Custom mode requires policy_mapping_fn")
 
             policy_map = {}
             for agent in agents:
@@ -254,7 +256,7 @@ class FlexibleMultiAgentPolicyManager(MultiAgentPolicy):
 
     def get_policy_groups(self) -> dict[str, list[str]]:
         """Get mapping of policies to agents using them."""
-        policy_to_agents = {}
+        policy_to_agents: dict[int, list[str]] = {}
         for agent_id, policy in self.policy_map.items():
             policy_key = id(policy)
             if policy_key not in policy_to_agents:

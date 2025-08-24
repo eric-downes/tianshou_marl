@@ -55,8 +55,8 @@ class CTDEPolicy(Policy):
         action_space: spaces.Space,
         enable_global_info: bool = True,
         discount_factor: float = 0.99,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         """Initialize CTDE policy.
 
         Args:
@@ -86,7 +86,7 @@ class CTDEPolicy(Policy):
         self.discount_factor = discount_factor
         self.device = "cpu"  # Default device
 
-    def forward(self, batch: Batch, state: Any | None = None, **kwargs) -> Batch:
+    def forward(self, batch: Batch, state: Any | None = None, **kwargs: Any) -> Batch:
         """Forward pass for action selection (decentralized execution).
 
         During execution, only local observations are used.
@@ -128,7 +128,7 @@ class CTDEPolicy(Policy):
 
         return Batch(act=actions, state=state)
 
-    def learn(self, batch: Batch, **kwargs) -> dict[str, Any]:
+    def learn(self, batch: Batch, **kwargs: Any) -> dict[str, Any]:
         """Learning with centralized critic (centralized training).
 
         During training, global information is used if available.
@@ -209,7 +209,7 @@ class CTDEPolicy(Policy):
             "critic_loss": critic_loss.item(),
         }
 
-    def soft_update_targets(self):
+    def soft_update_targets(self) -> None:
         """Soft update target networks using tau parameter."""
         if hasattr(self, "actor_target"):
             for param, target_param in zip(
@@ -390,7 +390,7 @@ class DecentralizedActor(nn.Module):
         self.fc2 = nn.Linear(hidden_dim, hidden_dim)
         self.fc3 = nn.Linear(hidden_dim, action_dim)
 
-    def forward(self, obs: torch.Tensor, state=None) -> tuple[torch.Tensor, Any]:
+    def forward(self, obs: torch.Tensor, state: Any = None) -> tuple[torch.Tensor, Any]:
         """Forward pass.
 
         Args:
@@ -547,8 +547,8 @@ class QMIXPolicy(Policy):
         optimizer: optim.Optimizer | None = None,
         discount_factor: float = 0.99,
         epsilon: float = 0.1,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         """Initialize QMIX policy.
 
         Args:
@@ -576,19 +576,19 @@ class QMIXPolicy(Policy):
 
         # Create optimizer if not provided
         if optimizer is None:
-            params = []
+            params: list[torch.nn.Parameter] = []
             for actor in actors:
                 params.extend(actor.parameters())
             params.extend(mixer.parameters())
-            self.optimizer = optim.Adam(params)
+            self.optim = optim.Adam(params)
         else:
-            self.optimizer = optimizer
+            self.optim = optimizer  # type: ignore[assignment]
 
         # Target networks for double Q-learning
         self.target_actors = [copy.deepcopy(actor) for actor in actors]
         self.target_mixer = copy.deepcopy(mixer)
 
-    def forward(self, batch: Batch, state=None, **kwargs) -> Batch:
+    def forward(self, batch: Batch, state: Any = None, **kwargs: Any) -> Batch:
         """Forward pass for decentralized execution.
 
         Args:
@@ -618,7 +618,9 @@ class QMIXPolicy(Policy):
             # Epsilon-greedy action selection
             if np.random.random() < self.epsilon:
                 # Random action
-                actions = torch.randint(0, self.action_space.n, (obs.shape[0],))
+                from gymnasium.spaces import Discrete
+                assert isinstance(self.action_space, Discrete)
+                actions = torch.randint(0, int(self.action_space.n), (obs.shape[0],))
             else:
                 # Greedy action
                 actions = q_values.argmax(dim=-1)
@@ -643,7 +645,9 @@ class QMIXPolicy(Policy):
                 # Epsilon-greedy action selection
                 if np.random.random() < self.epsilon:
                     # Random action
-                    actions = torch.randint(0, self.action_space.n, (obs.shape[0],))
+                    from gymnasium.spaces import Discrete
+                    assert isinstance(self.action_space, Discrete)
+                    actions = torch.randint(0, int(self.action_space.n), (obs.shape[0],))
                 else:
                     # Greedy action
                     actions = q_values.argmax(dim=-1)
@@ -652,7 +656,7 @@ class QMIXPolicy(Policy):
 
         return result
 
-    def learn(self, batch: Batch, **kwargs) -> dict[str, Any]:
+    def learn(self, batch: Batch, **kwargs: Any) -> dict[str, Any]:
         """QMIX learning step.
 
         Args:
@@ -731,16 +735,16 @@ class QMIXPolicy(Policy):
         loss = F.mse_loss(q_total, td_target)
 
         # Update
-        self.optimizer.zero_grad()
+        self.optim.zero_grad()
         loss.backward()
-        self.optimizer.step()
+        self.optim.step()
 
         return {
             "loss": loss.item(),
             "q_values": q_total.mean().item(),
         }
 
-    def update_target_networks(self, tau: float = 0.005):
+    def update_target_networks(self, tau: float = 0.005) -> None:
         """Soft update target networks.
 
         Args:
@@ -781,8 +785,8 @@ class MADDPGPolicy(Policy):
         optimizer_critics: list[optim.Optimizer] | None = None,
         discount_factor: float = 0.99,
         tau: float = 0.01,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         """Initialize MADDPG policy.
 
         Args:
@@ -813,20 +817,20 @@ class MADDPGPolicy(Policy):
         if optimizer_actors is None:
             self.optimizer_actors = [optim.Adam(actor.parameters()) for actor in actors]
         else:
-            self.optimizer_actors = optimizer_actors
+            self.optimizer_actors = optimizer_actors  # type: ignore[assignment]
 
         if optimizer_critics is None:
             self.optimizer_critics = [
                 optim.Adam(critic.parameters()) for critic in critics
             ]
         else:
-            self.optimizer_critics = optimizer_critics
+            self.optimizer_critics = optimizer_critics  # type: ignore[assignment]
 
         # Target networks
         self.target_actors = [copy.deepcopy(actor) for actor in actors]
         self.target_critics = [copy.deepcopy(critic) for critic in critics]
 
-    def forward(self, batch: Batch, state=None, **kwargs) -> Batch:
+    def forward(self, batch: Batch, state: Any = None, **kwargs: Any) -> Batch:
         """Forward pass for decentralized execution.
 
         Args:
@@ -854,7 +858,7 @@ class MADDPGPolicy(Policy):
 
         return result
 
-    def learn(self, batch: Batch, **kwargs) -> dict[str, Any]:
+    def learn(self, batch: Batch, **kwargs: Any) -> dict[str, Any]:
         """MADDPG learning step.
 
         Args:
@@ -989,7 +993,7 @@ class MADDPGPolicy(Policy):
 
         return losses
 
-    def update_target_networks(self):
+    def update_target_networks(self) -> None:
         """Soft update target networks."""
         for i in range(self.n_agents):
             # Update target actor

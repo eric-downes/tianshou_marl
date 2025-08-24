@@ -66,7 +66,7 @@ class CommunicationChannel:
         sender_id: str,
         message: torch.Tensor,
         target_id: str | list[str] | None = None,
-    ):
+    ) -> None:
         """Send message from agent.
 
         Args:
@@ -141,15 +141,16 @@ class CommunicationChannel:
                 return False
             sender_idx = self.agent_to_idx[packet["sender"]]
             receiver_idx = self.agent_to_idx[receiver_id]
-            return self.topology[sender_idx, receiver_idx] > 0
+            return bool(self.topology[sender_idx, receiver_idx] > 0)  # type: ignore[index]
 
-        return False
+        # Fallback for unsupported communication types  
+        return False  # type: ignore[unreachable]
 
-    def clear(self):
+    def clear(self) -> None:
         """Clear message buffer for next step."""
         self.message_buffer = []
 
-    def update_topology(self, new_topology: np.ndarray):
+    def update_topology(self, new_topology: np.ndarray) -> None:
         """Update communication topology for graph-based communication.
 
         Args:
@@ -312,7 +313,7 @@ class CommunicatingPolicy(nn.Module):
         # Enhanced observation dimension (obs + comm_info)
         self.enhanced_obs_dim = obs_dim + comm_decoder.output_dim
 
-    def forward(self, batch: Batch, state: Any | None = None, **kwargs) -> Batch:
+    def forward(self, batch: Batch, state: Any | None = None, **kwargs: Any) -> Batch:
         """Forward pass with communication.
 
         Args:
@@ -373,7 +374,7 @@ class CommunicatingPolicy(nn.Module):
 
         return Batch(act=action, state=new_state)
 
-    def learn(self, batch: Batch, **kwargs) -> dict[str, float]:
+    def learn(self, batch: Batch, **kwargs: Any) -> dict[str, float]:
         """Learning update for the policy.
 
         This is a placeholder that should be overridden by specific algorithms.
@@ -389,7 +390,7 @@ class CommunicatingPolicy(nn.Module):
         # This should be implemented by specific algorithm classes
         raise NotImplementedError("Learn method must be implemented by specific algorithm")
 
-    def set_communication_enabled(self, enabled: bool):
+    def set_communication_enabled(self, enabled: bool) -> None:
         """Enable or disable communication.
 
         Args:
@@ -398,7 +399,7 @@ class CommunicatingPolicy(nn.Module):
         """
         self.communication_enabled = enabled
 
-    def reset_communication(self):
+    def reset_communication(self) -> None:
         """Reset communication channel (clear message buffer)."""
         self.comm_channel.clear()
 
@@ -449,13 +450,13 @@ class MultiAgentCommunicationWrapper:
 
         return actions
 
-    def reset(self):
+    def reset(self) -> None:
         """Reset communication for all agents."""
         self.comm_channel.clear()
         for policy in self.policies.values():
             policy.reset_communication()
 
-    def set_communication_enabled(self, enabled: bool):
+    def set_communication_enabled(self, enabled: bool) -> None:
         """Enable or disable communication for all agents."""
         for policy in self.policies.values():
             policy.set_communication_enabled(enabled)
