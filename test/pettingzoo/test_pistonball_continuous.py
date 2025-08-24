@@ -4,7 +4,7 @@ import pytest
 from pistonball_continuous import get_args, train_agent, watch
 
 
-@pytest.mark.skip(reason="runtime too long and unstable result")
+@pytest.mark.slow  # Moved to slow: Runtime too long and unstable (see test/ICEBOX_TESTS.md)
 def test_piston_ball_continuous(args: argparse.Namespace = get_args()) -> None:
     if args.watch:
         watch(args)
