@@ -107,9 +107,9 @@ class FlexibleMultiAgentPolicyManager(MultiAgentPolicy):
             for agent, policy in self.policy_map.items():
                 if policy not in unique_policies.values():
                     unique_policies[agent] = policy
-            self.policies = unique_policies
+            self.policies = unique_policies  # type: ignore[assignment]
 
-    def _validate_config(self, policies):
+    def _validate_config(self, policies: Policy | list[Policy] | dict[str, Policy]) -> None:
         """Validate configuration based on mode."""
         if self.mode == "independent":
             if isinstance(policies, Policy):
@@ -131,7 +131,7 @@ class FlexibleMultiAgentPolicyManager(MultiAgentPolicy):
                     "Custom mode requires policy_mapping_fn to be specified"
                 )
 
-    def _build_policy_map(self, policies, agents) -> dict[str, Policy]:
+    def _build_policy_map(self, policies: Policy | list[Policy] | dict[str, Policy], agents: list[str]) -> dict[str, Policy]:
         """Build agent-to-policy mapping based on configuration mode."""
         if self.mode == "shared":
             # All agents use the same policy
@@ -175,7 +175,7 @@ class FlexibleMultiAgentPolicyManager(MultiAgentPolicy):
 
             policy_map = {}
             for agent in agents:
-                policy_id = self.policy_mapping_fn(agent)
+                policy_id = self.policy_mapping_fn(agent) if self.policy_mapping_fn else agent
                 if policy_id not in policies:
                     raise ValueError(f"Policy {policy_id} not found for agent {agent}")
                 policy_map[agent] = policies[policy_id]
@@ -254,7 +254,7 @@ class FlexibleMultiAgentPolicyManager(MultiAgentPolicy):
 
     def get_policy_groups(self) -> dict[str, list[str]]:
         """Get mapping of policies to agents using them."""
-        policy_to_agents = {}
+        policy_to_agents: dict[int, list[str]] = {}
         for agent_id, policy in self.policy_map.items():
             policy_key = id(policy)
             if policy_key not in policy_to_agents:
