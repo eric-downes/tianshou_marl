@@ -40,36 +40,32 @@ jobs:
           path: ./.venv
           key: venv-dev-${{ hashFiles('poetry.lock') }}
       
+      - name: Install dependencies
+        run: |
+          # Install all dependencies using poetry for consistency
+          poetry install --no-interaction --no-ansi
+          echo "✅ All dependencies installed"
+        timeout-minutes: 3
+      
       - name: Ultra-minimal lint (critical errors only)
         run: |
-          # Skip poetry entirely for speed - use pip directly
-          pip install ruff
-          ruff check . --select F --ignore F401,F841 || exit 1
+          # Use poetry's ruff
+          poetry run ruff check . --select F --ignore F401,F841 || exit 1
           echo "✅ No critical syntax/import errors"
       
       - name: Basic Python syntax check
         run: |
           # Just check Python can parse our files
-          python -m py_compile tianshou/algorithm/multiagent/*.py || exit 1
-          python -c "print('✅ All Python files can be parsed')"
+          poetry run python -m py_compile tianshou/algorithm/multiagent/*.py || exit 1
+          echo "✅ All Python files can be parsed"
         timeout-minutes: 1
-      
-      - name: Install minimal test dependencies
-        run: |
-          # Install only essential packages for fast tests
-          # Note: pandas and deepdiff are required by tianshou/data/batch.py
-          pip install pytest numpy torch gymnasium pettingzoo pandas deepdiff
-          echo "✅ Test dependencies installed"
-        timeout-minutes: 2
       
       - name: Run fast MARL tests
         run: |
-          # Run all fast MARL tests - they should all pass now
-          pytest test/multiagent/test_additional_coverage.py \
+          # Run all fast MARL tests using poetry's environment
+          poetry run pytest test/multiagent/test_additional_coverage.py \
                  -v \
                  -x \
                  || exit 1
           echo "✅ All fast MARL tests passed"
         timeout-minutes: 2
-        env:
-          PYTHONPATH: .
