@@ -3,7 +3,8 @@
 # Note: argparse conflicts have been resolved, so we can now use pytest directly
 
 # Suppress pygame and pkg_resources warnings at import time
-export PYTHONWARNINGS="ignore::DeprecationWarning:pygame.pkgdata,ignore::DeprecationWarning:pkg_resources"
+# More comprehensive suppression for all deprecation warnings from these modules
+export PYTHONWARNINGS="ignore::DeprecationWarning:pygame,ignore::DeprecationWarning:pkg_resources,ignore::DeprecationWarning"
 
 echo "Running Tianshou tests..."
 echo "========================="
