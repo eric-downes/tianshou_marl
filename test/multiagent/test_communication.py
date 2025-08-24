@@ -1,18 +1,17 @@
 """Tests for inter-agent communication module."""
 
-import pytest
 import numpy as np
 import torch
 import torch.nn as nn
 
-from tianshou.data import Batch
 from tianshou.algorithm.multiagent.communication import (
-    CommunicationChannel,
-    MessageEncoder,
-    MessageDecoder,
     CommunicatingPolicy,
+    CommunicationChannel,
+    MessageDecoder,
+    MessageEncoder,
     MultiAgentCommunicationWrapper,
 )
+from tianshou.data import Batch
 
 
 class DummyActor(nn.Module):

@@ -1,59 +1,61 @@
 """Multi-agent reinforcement learning algorithms."""
 
-from tianshou.algorithm.multiagent.marl import (
-    MultiAgentPolicy,
-    MultiAgentOffPolicyAlgorithm,
-    MultiAgentOnPolicyAlgorithm,
-    MARLDispatcher,
-    MapTrainingStats,
-)
-from tianshou.algorithm.multiagent.flexible_policy import FlexibleMultiAgentPolicyManager
-from tianshou.algorithm.multiagent.training_coordinator import (
-    MATrainer,
-    SimultaneousTrainer,
-    SequentialTrainer,
-    SelfPlayTrainer,
-    LeaguePlayTrainer,
+from tianshou.algorithm.multiagent.communication import (
+    CommunicatingPolicy,
+    CommunicationChannel,
+    MessageDecoder,
+    MessageEncoder,
+    MultiAgentCommunicationWrapper,
 )
 from tianshou.algorithm.multiagent.ctde import (
-    CTDEPolicy,
-    GlobalStateConstructor,
-    DecentralizedActor,
     CentralizedCritic,
-    QMIXPolicy,
-    QMIXMixer,
+    CTDEPolicy,
+    DecentralizedActor,
+    GlobalStateConstructor,
     MADDPGPolicy,
+    QMIXMixer,
+    QMIXPolicy,
 )
-from tianshou.algorithm.multiagent.communication import (
-    CommunicationChannel,
-    MessageEncoder,
-    MessageDecoder,
-    CommunicatingPolicy,
-    MultiAgentCommunicationWrapper,
+from tianshou.algorithm.multiagent.flexible_policy import (
+    FlexibleMultiAgentPolicyManager,
+)
+from tianshou.algorithm.multiagent.marl import (
+    MapTrainingStats,
+    MARLDispatcher,
+    MultiAgentOffPolicyAlgorithm,
+    MultiAgentOnPolicyAlgorithm,
+    MultiAgentPolicy,
+)
+from tianshou.algorithm.multiagent.training_coordinator import (
+    LeaguePlayTrainer,
+    MATrainer,
+    SelfPlayTrainer,
+    SequentialTrainer,
+    SimultaneousTrainer,
 )
 
 __all__ = [
-    "MultiAgentPolicy",
+    "CTDEPolicy",
+    "CentralizedCritic",
+    "CommunicatingPolicy",
+    "CommunicationChannel",
+    "DecentralizedActor",
+    "FlexibleMultiAgentPolicyManager",
+    "GlobalStateConstructor",
+    "LeaguePlayTrainer",
+    "MADDPGPolicy",
+    "MARLDispatcher",
+    "MATrainer",
+    "MapTrainingStats",
+    "MessageDecoder",
+    "MessageEncoder",
+    "MultiAgentCommunicationWrapper",
     "MultiAgentOffPolicyAlgorithm",
     "MultiAgentOnPolicyAlgorithm",
-    "MARLDispatcher",
-    "MapTrainingStats",
-    "FlexibleMultiAgentPolicyManager",
-    "MATrainer",
-    "SimultaneousTrainer",
-    "SequentialTrainer",
-    "SelfPlayTrainer",
-    "LeaguePlayTrainer",
-    "CTDEPolicy",
-    "GlobalStateConstructor",
-    "DecentralizedActor",
-    "CentralizedCritic",
-    "QMIXPolicy",
+    "MultiAgentPolicy",
     "QMIXMixer",
-    "MADDPGPolicy",
-    "CommunicationChannel",
-    "MessageEncoder",
-    "MessageDecoder",
-    "CommunicatingPolicy",
-    "MultiAgentCommunicationWrapper",
+    "QMIXPolicy",
+    "SelfPlayTrainer",
+    "SequentialTrainer",
+    "SimultaneousTrainer",
 ]
