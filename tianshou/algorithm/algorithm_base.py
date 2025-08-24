@@ -452,7 +452,7 @@ class Algorithm(torch.nn.Module, Generic[TPolicy, TTrainerParams], ABC):
         super().__init__()
         self.policy: TPolicy = policy
         self.lr_schedulers: list[LRScheduler] = []
-        self._optimizers: list["Algorithm.Optimizer"] = []
+        self._optimizers: list[Algorithm.Optimizer] = []
         """
         list of optimizers associated with the algorithm (created via `_create_optimizer`),
         whose states will be returned when calling `state_dict` and which will be restored

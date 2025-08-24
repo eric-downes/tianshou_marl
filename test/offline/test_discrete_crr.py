@@ -1,14 +1,15 @@
 import argparse
 import os
 import pickle
-from test.determinism_test import AlgorithmDeterminismTest
-from test.offline.gather_cartpole_data import expert_file_name, gather_data
 
 import gymnasium as gym
 import numpy as np
+import pytest
 import torch
 from torch.utils.tensorboard import SummaryWriter
 
+from test.determinism_test import AlgorithmDeterminismTest
+from test.offline.gather_cartpole_data import expert_file_name, gather_data
 from tianshou.algorithm import Algorithm, DiscreteCRR
 from tianshou.algorithm.modelfree.reinforce import DiscreteActorPolicy
 from tianshou.algorithm.optim import AdamOptimizerFactory
@@ -24,7 +25,6 @@ from tianshou.utils import TensorboardLogger
 from tianshou.utils.net.common import Net
 from tianshou.utils.net.discrete import DiscreteActor, DiscreteCritic
 from tianshou.utils.space_info import SpaceInfo
-import pytest
 
 
 def get_args() -> argparse.Namespace:

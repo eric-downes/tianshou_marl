@@ -141,6 +141,7 @@ class ReplayBuffer:
 
         The buffer sliced from 4 to 5 and then from 0 to 2 will contain the transitions
         corresponding to the provided start and stop values.
+
         """
         if stop >= start:
             raise ValueError(
@@ -204,6 +205,7 @@ class ReplayBuffer:
         :param start: The start index of the interval.
         :param stop: The stop index of the interval.
         :return: The indices of the transitions in the buffer between start and stop.
+
         """
         start_left_edge = np.searchsorted(self.subbuffer_edges, start, side="right") - 1
         stop_left_edge = np.searchsorted(self.subbuffer_edges, stop - 1, side="right") - 1

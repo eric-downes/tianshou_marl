@@ -5,14 +5,15 @@ which are common in complex multi-agent environments where observations
 consist of multiple components (e.g., different sensor modalities).
 """
 
-from typing import Any, Dict, Optional, Union
+from typing import Any
+
 import numpy as np
 import torch
 import torch.nn as nn
 from gymnasium import spaces
 
-from tianshou.data import Batch
 from tianshou.algorithm.algorithm_base import Policy
+from tianshou.data import Batch
 
 
 class DictObservationWrapper:
@@ -42,6 +43,7 @@ class DictObservationWrapper:
         Args:
             policy: Base policy to wrap
             observation_space: Dict observation space from environment
+
         """
         self.policy = policy
         self.observation_space = observation_space
@@ -56,7 +58,7 @@ class DictObservationWrapper:
             # Auto-build preprocessor
             return DictToTensorPreprocessor(self.observation_space)
 
-    def forward(self, batch: Batch, state: Optional[Any] = None, **kwargs):
+    def forward(self, batch: Batch, state: Any | None = None, **kwargs):
         """Process Dict observations before policy forward.
 
         Args:
@@ -66,6 +68,7 @@ class DictObservationWrapper:
 
         Returns:
             Policy output batch with actions
+
         """
         # Check if observations are dict type or Batch with dict-like structure
         if isinstance(batch.obs, (dict, Batch)):
@@ -91,7 +94,7 @@ class DictObservationWrapper:
             # Non-dict observations pass through
             return self.policy.forward(batch, state, **kwargs)
 
-    def _preprocess_dict_obs(self, obs: Dict[str, Any]) -> torch.Tensor:
+    def _preprocess_dict_obs(self, obs: dict[str, Any]) -> torch.Tensor:
         """Preprocess dict observations to tensor.
 
         Args:
@@ -99,6 +102,7 @@ class DictObservationWrapper:
 
         Returns:
             Processed tensor observations
+
         """
         # Check if batched or single observation
         is_batched = False
@@ -143,6 +147,7 @@ class DictObservationWrapper:
 
         Returns:
             Learning statistics
+
         """
         # Preprocess observations if dict
         if isinstance(batch.obs, dict):
@@ -168,6 +173,7 @@ class DictToTensorPreprocessor(nn.Module):
 
         Args:
             observation_space: Dict observation space to process
+
         """
         super().__init__()
         self.keys = sorted(observation_space.spaces.keys())
@@ -193,6 +199,7 @@ class DictToTensorPreprocessor(nn.Module):
 
         Returns:
             Tuple of (extractor module, output dimension)
+
         """
         if isinstance(space, spaces.Box):
             # Linear layer for continuous features
@@ -215,7 +222,7 @@ class DictToTensorPreprocessor(nn.Module):
         else:
             raise NotImplementedError(f"Space type {type(space)} not supported")
 
-    def forward(self, obs: Dict[str, torch.Tensor]) -> torch.Tensor:
+    def forward(self, obs: dict[str, torch.Tensor]) -> torch.Tensor:
         """Convert Dict observation to flat tensor.
 
         Args:
@@ -223,6 +230,7 @@ class DictToTensorPreprocessor(nn.Module):
 
         Returns:
             Concatenated feature tensor [batch_size, total_features]
+
         """
         features = []
 

@@ -1,13 +1,14 @@
 import argparse
 import os
-from test.determinism_test import AlgorithmDeterminismTest
 
 import gymnasium as gym
 import numpy as np
+import pytest
 import torch
 import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
 
+from test.determinism_test import AlgorithmDeterminismTest
 from tianshou.algorithm import REDQ
 from tianshou.algorithm.algorithm_base import Algorithm
 from tianshou.algorithm.modelfree.redq import REDQPolicy
@@ -20,7 +21,6 @@ from tianshou.utils import TensorboardLogger
 from tianshou.utils.net.common import EnsembleLinear, Net
 from tianshou.utils.net.continuous import ContinuousActorProbabilistic, ContinuousCritic
 from tianshou.utils.space_info import SpaceInfo
-import pytest
 
 
 def get_args() -> argparse.Namespace:

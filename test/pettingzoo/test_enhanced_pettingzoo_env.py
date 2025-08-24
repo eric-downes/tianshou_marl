@@ -1,8 +1,8 @@
 """Tests for enhanced PettingZoo environment wrapper with parallel support."""
 
-import pytest
+
 import numpy as np
-from unittest.mock import MagicMock, Mock
+import pytest
 from gymnasium import spaces
 
 from tianshou.env.enhanced_pettingzoo_env import EnhancedPettingZooEnv
@@ -34,8 +34,8 @@ class MockParallelEnv:
 
         observations = {agent: np.random.rand(4).astype(np.float32) for agent in self.agents}
         rewards = {agent: np.random.rand() for agent in self.agents}
-        terminations = {agent: False for agent in self.agents}
-        truncations = {agent: False for agent in self.agents}
+        terminations = dict.fromkeys(self.agents, False)
+        truncations = dict.fromkeys(self.agents, False)
         infos = {agent: {} for agent in self.agents}
 
         return observations, rewards, terminations, truncations, infos
@@ -54,10 +54,10 @@ class MockAECEnv:
         self.possible_agents = ["agent_0", "agent_1", "agent_2"]
         self.agents = self.possible_agents.copy()
         self.agent_selection = None
-        self._cumulative_rewards = {agent: 0.0 for agent in self.agents}
-        self.rewards = {agent: 0.0 for agent in self.agents}
-        self.terminations = {agent: False for agent in self.agents}
-        self.truncations = {agent: False for agent in self.agents}
+        self._cumulative_rewards = dict.fromkeys(self.agents, 0.0)
+        self.rewards = dict.fromkeys(self.agents, 0.0)
+        self.terminations = dict.fromkeys(self.agents, False)
+        self.truncations = dict.fromkeys(self.agents, False)
         self.infos = {agent: {} for agent in self.agents}
         self._agent_selector = None
 
@@ -65,10 +65,10 @@ class MockAECEnv:
         """Reset environment and select first agent."""
         self.agents = self.possible_agents.copy()
         self.agent_selection = self.agents[0]
-        self._cumulative_rewards = {agent: 0.0 for agent in self.agents}
-        self.rewards = {agent: 0.0 for agent in self.agents}
-        self.terminations = {agent: False for agent in self.agents}
-        self.truncations = {agent: False for agent in self.agents}
+        self._cumulative_rewards = dict.fromkeys(self.agents, 0.0)
+        self.rewards = dict.fromkeys(self.agents, 0.0)
+        self.terminations = dict.fromkeys(self.agents, False)
+        self.truncations = dict.fromkeys(self.agents, False)
         self.infos = {agent: {} for agent in self.agents}
 
     def step(self, action):

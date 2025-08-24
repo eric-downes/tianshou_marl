@@ -1,12 +1,13 @@
 import argparse
 import os
-from test.determinism_test import AlgorithmDeterminismTest
 
 import gymnasium as gym
 import numpy as np
+import pytest
 import torch
 from torch.utils.tensorboard import SummaryWriter
 
+from test.determinism_test import AlgorithmDeterminismTest
 from tianshou.algorithm import SAC, OffPolicyImitationLearning
 from tianshou.algorithm.algorithm_base import Algorithm
 from tianshou.algorithm.imitation.imitation_base import ImitationPolicy
@@ -23,8 +24,6 @@ from tianshou.utils.net.continuous import (
     ContinuousCritic,
 )
 from tianshou.utils.space_info import SpaceInfo
-
-import pytest
 
 try:
     import envpool

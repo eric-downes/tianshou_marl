@@ -2,14 +2,15 @@ import argparse
 import datetime
 import os
 import pickle
-from test.determinism_test import AlgorithmDeterminismTest
-from test.offline.gather_pendulum_data import expert_file_name, gather_data
 
 import gymnasium as gym
 import numpy as np
+import pytest
 import torch
 from torch.utils.tensorboard import SummaryWriter
 
+from test.determinism_test import AlgorithmDeterminismTest
+from test.offline.gather_pendulum_data import expert_file_name, gather_data
 from tianshou.algorithm import TD3BC
 from tianshou.algorithm.algorithm_base import Algorithm
 from tianshou.algorithm.modelfree.ddpg import ContinuousDeterministicPolicy
@@ -22,7 +23,6 @@ from tianshou.utils import TensorboardLogger
 from tianshou.utils.net.common import Net
 from tianshou.utils.net.continuous import ContinuousActorDeterministic, ContinuousCritic
 from tianshou.utils.space_info import SpaceInfo
-import pytest
 
 
 def get_args() -> argparse.Namespace:

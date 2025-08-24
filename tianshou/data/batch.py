@@ -895,8 +895,8 @@ class Batch(BatchProtocol):
 
             # TODO: simplify
             if (
-                dtype is not None
-                and arr.dtype != dtype
+                (dtype is not None
+                and arr.dtype != dtype)
                 or arr.device.type != device.type
                 or device.index != arr.device.index
             ):

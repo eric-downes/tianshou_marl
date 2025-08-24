@@ -1,7 +1,7 @@
 import argparse
 
-from tic_tac_toe import get_args, train_agent, watch
 import pytest
+from tic_tac_toe import get_args, train_agent, watch
 
 
 @pytest.mark.slow

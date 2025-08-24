@@ -1,15 +1,16 @@
 import argparse
 import os
 import pickle
-from test.determinism_test import AlgorithmDeterminismTest
-from test.offline.gather_pendulum_data import expert_file_name, gather_data
 
 import gymnasium as gym
 import numpy as np
+import pytest
 import torch
 from torch.distributions import Distribution, Independent, Normal
 from torch.utils.tensorboard import SummaryWriter
 
+from test.determinism_test import AlgorithmDeterminismTest
+from test.offline.gather_pendulum_data import expert_file_name, gather_data
 from tianshou.algorithm import GAIL, Algorithm
 from tianshou.algorithm.modelfree.reinforce import ProbabilisticActorPolicy
 from tianshou.algorithm.optim import AdamOptimizerFactory
@@ -20,7 +21,6 @@ from tianshou.utils import TensorboardLogger
 from tianshou.utils.net.common import ActorCritic, Net
 from tianshou.utils.net.continuous import ContinuousActorProbabilistic, ContinuousCritic
 from tianshou.utils.space_info import SpaceInfo
-import pytest
 
 
 def get_args() -> argparse.Namespace:

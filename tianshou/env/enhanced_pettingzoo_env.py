@@ -1,7 +1,6 @@
 """Enhanced PettingZoo environment wrapper with parallel environment support."""
 
-from typing import Any, Dict, List, Literal, Optional, Union
-import warnings
+from typing import Any, Literal
 
 import numpy as np
 from gymnasium import spaces
@@ -50,7 +49,7 @@ class EnhancedPettingZooEnv(PettingZooEnv):
 
     def __init__(
         self,
-        env: Union[BaseWrapper, ParallelEnv, AECEnv],
+        env: BaseWrapper | ParallelEnv | AECEnv,
         mode: Literal["aec", "parallel", "auto"] = "auto",
     ):
         """Initialize enhanced PettingZoo environment wrapper.
@@ -61,6 +60,7 @@ class EnhancedPettingZooEnv(PettingZooEnv):
                 - "aec": Agent Environment Cycle (sequential actions)
                 - "parallel": Parallel environment (simultaneous actions)
                 - "auto": Auto-detect from environment type
+
         """
         # Auto-detect environment type
         if mode == "auto":
@@ -119,6 +119,7 @@ class EnhancedPettingZooEnv(PettingZooEnv):
         Returns:
             For AEC mode: (obs_dict, info) where obs_dict contains agent_id, obs, and optionally mask
             For parallel mode: (obs_dict, info) where obs_dict contains observations for all agents
+
         """
         if self.mode == "parallel":
             return self._parallel_reset(*args, **kwargs)
@@ -155,8 +156,8 @@ class EnhancedPettingZooEnv(PettingZooEnv):
         return obs_dict, infos
 
     def step(
-        self, action: Union[int, np.ndarray, Dict[str, Any]]
-    ) -> tuple[dict, list, Union[bool, list], Union[bool, list], dict]:
+        self, action: int | np.ndarray | dict[str, Any]
+    ) -> tuple[dict, list, bool | list, bool | list, dict]:
         """Take a step in the environment.
 
         Args:
@@ -169,6 +170,7 @@ class EnhancedPettingZooEnv(PettingZooEnv):
             terminated: Termination flag
             truncated: Truncation flag
             info: Additional info
+
         """
         if self.mode == "parallel":
             return self._parallel_step(action)
@@ -176,7 +178,7 @@ class EnhancedPettingZooEnv(PettingZooEnv):
             return super().step(action)
 
     def _parallel_step(
-        self, action: Union[Dict[str, Any], np.ndarray]
+        self, action: dict[str, Any] | np.ndarray
     ) -> tuple[dict, list, list, list, dict]:
         """Step in parallel environment."""
         # Convert array actions to dict if needed

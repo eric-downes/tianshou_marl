@@ -1,12 +1,13 @@
 import argparse
 import os
-from test.determinism_test import AlgorithmDeterminismTest
 
 import gymnasium as gym
 import numpy as np
+import pytest
 import torch
 from torch.utils.tensorboard import SummaryWriter
 
+from test.determinism_test import AlgorithmDeterminismTest
 from tianshou.algorithm import PPO
 from tianshou.algorithm.algorithm_base import Algorithm
 from tianshou.algorithm.modelfree.reinforce import DiscreteActorPolicy
@@ -24,7 +25,6 @@ from tianshou.utils.net.common import (
 )
 from tianshou.utils.net.discrete import DiscreteActor, DiscreteCritic
 from tianshou.utils.space_info import SpaceInfo
-import pytest
 
 
 def get_args() -> argparse.Namespace:

@@ -1,15 +1,18 @@
 """Tests for Dict observation space support in MARL environments."""
 
-import pytest
+
 import numpy as np
+import pytest
 import torch
 import torch.nn as nn
 from gymnasium import spaces
-from typing import Dict, Any
 
-from tianshou.data import Batch
 from tianshou.algorithm.algorithm_base import Policy
-from tianshou.env.dict_observation import DictObservationWrapper, DictToTensorPreprocessor
+from tianshou.data import Batch
+from tianshou.env.dict_observation import (
+    DictObservationWrapper,
+    DictToTensorPreprocessor,
+)
 
 
 class MockPolicy(Policy):

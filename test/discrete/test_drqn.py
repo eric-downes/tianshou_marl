@@ -1,12 +1,13 @@
 import argparse
 import os
-from test.determinism_test import AlgorithmDeterminismTest
 
 import gymnasium as gym
 import numpy as np
+import pytest
 import torch
 from torch.utils.tensorboard import SummaryWriter
 
+from test.determinism_test import AlgorithmDeterminismTest
 from tianshou.algorithm import DQN
 from tianshou.algorithm.algorithm_base import Algorithm
 from tianshou.algorithm.modelfree.dqn import DiscreteQLearningPolicy
@@ -18,7 +19,6 @@ from tianshou.utils import TensorboardLogger
 from tianshou.utils.net.common import Recurrent
 from tianshou.utils.space_info import SpaceInfo
 from tianshou.utils.torch_utils import policy_within_training_step
-import pytest
 
 
 def get_args() -> argparse.Namespace:

@@ -1,6 +1,5 @@
 """Pytest configuration for tianshou tests."""
 
-import sys
 import pytest
 
 

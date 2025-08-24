@@ -1,13 +1,14 @@
 import argparse
 import os
-from test.determinism_test import AlgorithmDeterminismTest
 
 import gymnasium as gym
 import numpy as np
+import pytest
 import torch
 from gymnasium.spaces import Box
 from torch.utils.tensorboard import SummaryWriter
 
+from test.determinism_test import AlgorithmDeterminismTest
 from tianshou.algorithm import A2C, Algorithm, OffPolicyImitationLearning
 from tianshou.algorithm.imitation.imitation_base import ImitationPolicy
 from tianshou.algorithm.modelfree.reinforce import ProbabilisticActorPolicy
@@ -18,7 +19,6 @@ from tianshou.trainer import OffPolicyTrainerParams, OnPolicyTrainerParams
 from tianshou.utils import TensorboardLogger
 from tianshou.utils.net.common import Net
 from tianshou.utils.net.discrete import DiscreteActor, DiscreteCritic
-import pytest
 
 try:
     import envpool
