@@ -49,9 +49,10 @@ jobs:
           poetry run ruff check . || exit 1
           echo "✅ Full linting passed"
       
-      - name: Type checking
+      - name: Type checking  
         run: |
-          poetry run mypy --show-error-codes --pretty tianshou/ || echo "Type checking warnings (non-blocking)"
+          poetry run mypy --show-error-codes --pretty tianshou/ || echo "⚠️  Type checking warnings (non-blocking for now)"
+          echo "✅ Type checking completed"
       
       - name: MARL tests
         run: |
