@@ -1,0 +1,77 @@
+name: All Tests (Including Slow)
+
+on:
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+    inputs:
+      debug_enabled:
+        type: boolean
+        description: 'Run the build with tmate debugging enabled'
+        required: false
+        default: false
+
+jobs:
+  all-tests:
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, 'ci skip')"
+    strategy:
+      matrix:
+        python-version: ["3.11"]
+    
+    steps:
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
+      
+      - name: Cancel previous run
+        uses: styfle/cancel-workflow-action@0.11.0
+        with:
+          access_token: ${{ github.token }}
+      
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      
+      - name: Install poetry
+        uses: abatilo/actions-poetry@v2
+      
+      - name: Setup a local virtual environment
+        run: |
+          poetry config virtualenvs.create true --local
+          poetry config virtualenvs.in-project true --local
+      
+      - uses: actions/cache@v3
+        name: Define a cache for the virtual environment
+        with:
+          path: ./.venv
+          key: venv-all-${{ hashFiles('poetry.lock') }}
+      
+      - name: Install the project dependencies
+        run: |
+          poetry install --with dev --extras "envpool eval"
+      
+      - name: wandb login
+        run: |
+          poetry run wandb login e2366d661b89f2bee877c40bee15502d67b7abef
+      
+      - name: Run ALL tests (including slow)
+        run: |
+          echo "Running all tests including slow tests..."
+          poetry run pytest test -m "" --cov=tianshou --durations=10 -v --tb=short --cov-report=term-missing --cov-report=xml
+      
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV }}
+          file: ./coverage.xml
+          flags: all-tests
+          name: all-tests-coverage
+          fail_ci_if_error: false
