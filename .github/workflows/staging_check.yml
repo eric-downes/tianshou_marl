@@ -1,0 +1,64 @@
+name: Staging Quality Check
+
+on:
+  pull_request:
+    branches:
+      - staging
+  push:
+    branches:
+      - staging
+  workflow_dispatch:
+
+jobs:
+  staging-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10  # Faster than master, slower than dev
+    steps:
+      - name: Cancel previous run
+        uses: styfle/cancel-workflow-action@0.11.0
+        with:
+          access_token: ${{ github.token }}
+      
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+      
+      - name: Install poetry
+        uses: abatilo/actions-poetry@v2
+      
+      - name: Setup virtual environment
+        run: |
+          poetry config virtualenvs.create true --local
+          poetry config virtualenvs.in-project true --local
+      
+      - uses: actions/cache@v3
+        name: Cache dependencies
+        with:
+          path: ./.venv
+          key: venv-staging-${{ hashFiles('poetry.lock') }}
+      
+      - name: Install dependencies
+        run: |
+          poetry install --with dev --no-interaction --no-ansi
+      
+      - name: Full lint check
+        run: |
+          poetry run ruff check . || exit 1
+          echo "✅ Full linting passed"
+      
+      - name: Type checking
+        run: |
+          poetry run mypy --show-error-codes --pretty tianshou/ || echo "Type checking warnings (non-blocking)"
+      
+      - name: MARL tests
+        run: |
+          poetry run pytest test/multiagent/ -v --tb=short --disable-warnings --maxfail=5
+        timeout-minutes: 5
+        
+      - name: Core tests  
+        run: |
+          poetry run pytest test/base/ -v --tb=short --disable-warnings --maxfail=5
+        timeout-minutes: 3
