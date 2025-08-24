@@ -172,6 +172,8 @@ class FlexibleMultiAgentPolicyManager(MultiAgentPolicy):
             # Use custom mapping function
             if not isinstance(policies, dict):
                 raise ValueError("Custom mode requires dict of policies")
+            if self.policy_mapping_fn is None:
+                raise ValueError("Custom mode requires policy_mapping_fn")
 
             policy_map = {}
             for agent in agents:

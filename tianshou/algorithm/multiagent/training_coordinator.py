@@ -53,8 +53,8 @@ class MATrainer:
         training_mode: Literal[
             "simultaneous", "sequential", "self_play", "league"
         ] = "simultaneous",
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         """Initialize multi-agent trainer.
 
         Args:
@@ -110,11 +110,11 @@ class MATrainer:
             Dictionary mapping agent_id to loss metrics
 
         """
-        losses = {}
+        losses: dict[str, Any] = {}
 
         # Train all agents
         for agent_id in self.policy_manager.policies.keys():
-            if agent_id in batch:
+            if agent_id in batch:  # type: ignore[operator]
                 agent_batch = batch[agent_id]
 
                 # Add global state if present
@@ -124,7 +124,7 @@ class MATrainer:
                     agent_batch.global_obs_next = batch.global_obs_next
 
                 policy = self.policy_manager.policies[agent_id]
-                losses[agent_id] = policy.learn(agent_batch)
+                losses[str(agent_id)] = policy.learn(agent_batch)
 
         return losses
 
@@ -145,13 +145,13 @@ class MATrainer:
             self.agent_order = sorted(self.policy_manager.policies.keys())
             self.steps_per_agent = 1
 
-        losses = {}
+        losses: dict[str, Any] = {}
 
         # Get current agent
         current_agent = self.agent_order[self.current_agent_idx]
 
         # Train only current agent
-        if current_agent in batch:
+        if current_agent in batch:  # type: ignore[operator]
             agent_batch = batch[current_agent]
 
             # Add global state if present
@@ -161,7 +161,7 @@ class MATrainer:
                 agent_batch.global_obs_next = batch.global_obs_next
 
             policy = self.policy_manager.policies[current_agent]
-            losses[current_agent] = policy.learn(agent_batch)
+            losses[str(current_agent)] = policy.learn(agent_batch)
 
         # Update counters
         self.current_agent_steps += 1
@@ -197,7 +197,7 @@ class MATrainer:
         # This is a placeholder - will be implemented by LeaguePlayTrainer
         raise NotImplementedError("Use LeaguePlayTrainer for league play training")
 
-    def set_training_mode(self, mode: str):
+    def set_training_mode(self, mode: Literal["simultaneous", "sequential", "self_play", "league"]) -> None:
         """Change training mode.
 
         Args:
@@ -227,7 +227,7 @@ class MATrainer:
             "training_mode": self.training_mode,
         }
 
-    def load_state_dict(self, state: dict[str, Any]):
+    def load_state_dict(self, state: dict[str, Any]) -> None:
         """Load trainer state from checkpoint.
 
         Args:
@@ -237,7 +237,7 @@ class MATrainer:
         self.step_count = state.get("step_count", 0)
         self.training_mode = state.get("training_mode", "simultaneous")
 
-    def save_checkpoint(self, path: str):
+    def save_checkpoint(self, path: str) -> None:
         """Save trainer checkpoint to file.
 
         Args:
@@ -251,11 +251,11 @@ class MATrainer:
         # Save each policy's state
         for agent_id, policy in self.policy_manager.policies.items():
             if hasattr(policy, "state_dict"):
-                checkpoint["policies"][agent_id] = policy.state_dict()
+                checkpoint["policies"][str(agent_id)] = policy.state_dict()
 
         torch.save(checkpoint, path)
 
-    def load_checkpoint(self, path: str):
+    def load_checkpoint(self, path: str) -> None:
         """Load trainer checkpoint from file.
 
         Args:
@@ -291,8 +291,8 @@ class SimultaneousTrainer(MATrainer):
         policy_manager: FlexibleMultiAgentPolicyManager,
         agent_train_freq: dict[str, int] | None = None,
         replay_buffers: dict[str, ReplayBuffer] | None = None,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         """Initialize simultaneous trainer.
 
         Args:
@@ -345,13 +345,15 @@ class SimultaneousTrainer(MATrainer):
                 # Get policy for this agent
                 if self.policy_manager.mode == "shared":
                     policy = self.policy_manager.policies["shared"]
-                else:
-                    policy = self.policy_manager.policies.get(agent_id)
-
-                if policy:
                     # Train the policy
                     policy.train()
-                    losses[agent_id] = policy.learn(agent_batch)
+                    losses[str(agent_id)] = policy.learn(agent_batch)
+                else:
+                    policy_maybe = self.policy_manager.policies.get(agent_id)
+                    if policy_maybe is not None:
+                        # Train the policy
+                        policy_maybe.train()
+                        losses[str(agent_id)] = policy_maybe.learn(agent_batch)
 
         return losses
 
@@ -368,8 +370,8 @@ class SequentialTrainer(MATrainer):
         policy_manager: FlexibleMultiAgentPolicyManager,
         agent_order: list[str] | None = None,
         steps_per_agent: int = 1,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         """Initialize sequential trainer.
 
         Args:
@@ -383,9 +385,9 @@ class SequentialTrainer(MATrainer):
 
         # Set agent training order
         if agent_order:
-            self.agent_order = agent_order
+            self.agent_order = agent_order  # type: ignore[assignment]
         else:
-            self.agent_order = sorted(policy_manager.policies.keys())
+            self.agent_order = [str(key) for key in sorted(policy_manager.policies.keys())]
 
         self.steps_per_agent = steps_per_agent
         self.current_agent_idx = 0
@@ -408,7 +410,7 @@ class SequentialTrainer(MATrainer):
         current_agent = self.agent_order[self.current_agent_idx]
 
         # Train only current agent
-        if current_agent in batch:
+        if current_agent in batch:  # type: ignore[operator]
             agent_batch = batch[current_agent]
             policy = self.policy_manager.policies[current_agent]
 
@@ -419,7 +421,7 @@ class SequentialTrainer(MATrainer):
                 else:
                     p.eval()
 
-            losses[current_agent] = policy.learn(agent_batch)
+            losses[str(current_agent)] = policy.learn(agent_batch)
 
         # Update counters
         self.current_agent_steps += 1
@@ -445,8 +447,8 @@ class SelfPlayTrainer(MATrainer):
         opponent_pool_size: int = 20,
         opponent_sampling: Literal["uniform", "prioritized", "latest"] = "uniform",
         win_rate_window: int = 100,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         """Initialize self-play trainer.
 
         Args:
@@ -468,9 +470,9 @@ class SelfPlayTrainer(MATrainer):
         self.win_rate_window = win_rate_window
 
         # Initialize opponent pool
-        self.opponent_pool = []
-        self.opponent_win_rates = {}
-        self.win_history = deque(maxlen=win_rate_window)
+        self.opponent_pool: list[Policy] = []
+        self.opponent_win_rates: dict[int, float] = {}
+        self.win_history: deque[bool] = deque(maxlen=win_rate_window)
 
     def train_step(self, batch: Batch) -> dict[str, Any]:
         """Execute self-play training step.
@@ -500,7 +502,7 @@ class SelfPlayTrainer(MATrainer):
 
         return losses
 
-    def _create_snapshot(self):
+    def _create_snapshot(self) -> Policy:
         """Create a snapshot of current main policy."""
         main_policy = self.policy_manager.policies[self.main_agent_id]
         snapshot = copy.deepcopy(main_policy)
@@ -514,6 +516,8 @@ class SelfPlayTrainer(MATrainer):
             oldest = self.opponent_pool.pop(0)
             if id(oldest) in self.opponent_win_rates:
                 del self.opponent_win_rates[id(oldest)]
+
+        return snapshot
 
     def _sample_opponent(self) -> Policy | None:
         """Sample an opponent from the pool.
@@ -548,10 +552,10 @@ class SelfPlayTrainer(MATrainer):
 
             return np.random.choice(self.opponent_pool, p=weights)
 
-        else:
-            return np.random.choice(self.opponent_pool)
+        # All cases handled above
+        raise ValueError(f"Unknown opponent_sampling type: {self.opponent_sampling}")
 
-    def update_win_rate(self, opponent_id: int, won: bool):
+    def update_win_rate(self, opponent_id: int, won: bool) -> None:
         """Update win rate against an opponent.
 
         Args:
@@ -585,7 +589,7 @@ class SelfPlayTrainer(MATrainer):
         )
         return state
 
-    def load_state_dict(self, state: dict[str, Any]):
+    def load_state_dict(self, state: dict[str, Any]) -> None:
         """Load trainer state from checkpoint.
 
         Args:
@@ -613,8 +617,8 @@ class LeaguePlayTrainer(MATrainer):
         relegation_threshold: float = 0.4,
         matchmaking: Literal["random", "elo", "win_rate"] = "random",
         games_per_evaluation: int = 10,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         """Initialize league play trainer.
 
         Args:
@@ -642,7 +646,7 @@ class LeaguePlayTrainer(MATrainer):
         self.agent_performance = dict.fromkeys(self.league, 0.5)
         self.elo_ratings = dict.fromkeys(self.league, 1000)
         self.game_count = 0
-        self.match_history = deque(maxlen=100)
+        self.match_history: deque[tuple[str, str, str]] = deque(maxlen=100)  # (winner, loser, timestamp)
 
     def train_step(self, batch: Batch) -> dict[str, Any]:
         """Execute league play training step.
@@ -667,7 +671,7 @@ class LeaguePlayTrainer(MATrainer):
                 agent_batch = batch[agent_id]
                 policy = self.policy_manager.policies[agent_id]
                 policy.train()
-                losses[agent_id] = policy.learn(agent_batch)
+                losses[str(agent_id)] = policy.learn(agent_batch)
 
         # Update league periodically
         if self.game_count % self.games_per_evaluation == 0:
@@ -685,36 +689,35 @@ class LeaguePlayTrainer(MATrainer):
         if self.matchmaking == "random":
             # Random pairing
             if len(self.league) < 2:
-                return self.league
-            return list(np.random.choice(self.league, size=2, replace=False))
+                return [str(agent) for agent in self.league]
+            return [str(agent) for agent in np.random.choice(self.league, size=2, replace=False)]
 
         elif self.matchmaking == "elo":
             # Elo-based matchmaking (similar skill levels)
             if len(self.league) < 2:
-                return self.league
+                return [str(agent) for agent in self.league]
 
             # Sort by Elo rating
             sorted_agents = sorted(self.league, key=lambda x: self.elo_ratings[x])
 
             # Pick two agents with similar Elo
             idx = np.random.randint(0, len(sorted_agents) - 1)
-            return [sorted_agents[idx], sorted_agents[idx + 1]]
+            return [str(sorted_agents[idx]), str(sorted_agents[idx + 1])]
 
         elif self.matchmaking == "win_rate":
             # Match based on win rates
             if len(self.league) < 2:
-                return self.league
+                return [str(agent) for agent in self.league]
 
             # Sort by performance
             sorted_agents = sorted(self.league, key=lambda x: self.agent_performance[x])
 
             # Pick two agents with similar performance
             idx = np.random.randint(0, len(sorted_agents) - 1)
-            return [sorted_agents[idx], sorted_agents[idx + 1]]
+            return [str(sorted_agents[idx]), str(sorted_agents[idx + 1])]
 
-        else:
-            # Default to random
-            return list(np.random.choice(self.league, size=2, replace=False))
+        # All matchmaking types handled above
+        raise ValueError(f"Unknown matchmaking type: {self.matchmaking}")
 
     def _update_league(self) -> tuple[list[str], list[str]]:
         """Update league with promotion and relegation.
@@ -723,21 +726,21 @@ class LeaguePlayTrainer(MATrainer):
             Tuple of (promoted agents, relegated agents)
 
         """
-        promoted = []
-        relegated = []
+        promoted: list[str] = []
+        relegated: list[str] = []
 
         for agent_id, performance in self.agent_performance.items():
             if performance >= self.promotion_threshold:
-                promoted.append(agent_id)
+                promoted.append(str(agent_id))
                 # Could add logic to move to higher league
 
             elif performance <= self.relegation_threshold:
-                relegated.append(agent_id)
+                relegated.append(str(agent_id))
                 # Could add logic to move to lower league
 
         return promoted, relegated
 
-    def update_match_result(self, winner: str, loser: str):
+    def update_match_result(self, winner: str, loser: str) -> None:
         """Update ratings based on match result.
 
         Args:
@@ -754,9 +757,10 @@ class LeaguePlayTrainer(MATrainer):
         self._update_elo(winner, loser)
 
         # Record match
-        self.match_history.append((winner, loser))
+        import time
+        self.match_history.append((winner, loser, str(time.time())))
 
-    def _update_elo(self, winner: str, loser: str, k: float = 32):
+    def _update_elo(self, winner: str, loser: str, k: float = 32) -> None:
         """Update Elo ratings.
 
         Args:
@@ -773,5 +777,5 @@ class LeaguePlayTrainer(MATrainer):
         expected_loser = 1 - expected_winner
 
         # Update ratings
-        self.elo_ratings[winner] = winner_elo + k * (1 - expected_winner)
-        self.elo_ratings[loser] = loser_elo + k * (0 - expected_loser)
+        self.elo_ratings[winner] = int(winner_elo + k * (1 - expected_winner))
+        self.elo_ratings[loser] = int(loser_elo + k * (0 - expected_loser))
