@@ -1,0 +1,99 @@
+name: Production Quality Gate
+
+on:
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  production-quality-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Cancel previous run
+        uses: styfle/cancel-workflow-action@0.11.0
+        with:
+          access_token: ${{ github.token }}
+      
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+      
+      - name: Install poetry
+        uses: abatilo/actions-poetry@v2
+      
+      - name: Setup virtual environment
+        run: |
+          poetry config virtualenvs.create true --local
+          poetry config virtualenvs.in-project true --local
+      
+      - uses: actions/cache@v3
+        name: Cache dependencies
+        with:
+          path: ./.venv
+          key: venv-production-${{ hashFiles('poetry.lock') }}
+      
+      - name: Install dependencies
+        run: |
+          poetry install --with dev --extras "eval"
+      
+      - name: Strict lint check for production
+        run: |
+          echo "🔍 Running strict production quality checks..."
+          
+          # Check for undefined names and syntax errors (must pass)
+          poetry run ruff check . --select F821,F822,F823,E9 || exit 1
+          echo "✅ No undefined names or syntax errors"
+          
+          # Check for unused variables (F841) - MUST pass for production
+          poetry run ruff check . --select F841
+          if [ $? -ne 0 ]; then
+            echo "❌ ERROR: Unused variables found. These MUST be fixed for production!"
+            exit 1
+          fi
+          echo "✅ No unused variables"
+          
+          # Check for complexity issues (C901) - MUST pass for production
+          poetry run ruff check . --select C901
+          if [ $? -ne 0 ]; then
+            echo "❌ ERROR: Complexity issues found. These MUST be fixed for production!"
+            echo "Consider refactoring complex functions to reduce cyclomatic complexity."
+            exit 1
+          fi
+          echo "✅ No complexity issues"
+          
+          # Check for whitespace issues (W293) - MUST pass for production
+          poetry run ruff check . --select W293
+          if [ $? -ne 0 ]; then
+            echo "❌ ERROR: Whitespace issues found. These MUST be fixed for production!"
+            echo "Run the whitespace fix script: python scripts/fix_whitespace.py"
+            exit 1
+          fi
+          echo "✅ No whitespace issues"
+          
+          # Run full lint check (existing rules)
+          poetry run poe lint || exit 1
+          echo "✅ Full lint check passed"
+      
+      - name: Type checking (must pass for production)
+        run: |
+          poetry run poe type-check || exit 1
+          echo "✅ Type checking passed"
+      
+      - name: Documentation build
+        run: |
+          poetry run poe doc-build || exit 1
+          echo "✅ Documentation builds successfully"
+      
+      - name: Core tests
+        run: |
+          poetry run pytest test/base/ -v --tb=short --disable-warnings --maxfail=1
+          echo "✅ Core tests passed"
+        timeout-minutes: 5
