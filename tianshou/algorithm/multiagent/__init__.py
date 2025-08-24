@@ -24,6 +24,13 @@ from tianshou.algorithm.multiagent.ctde import (
     QMIXMixer,
     MADDPGPolicy,
 )
+from tianshou.algorithm.multiagent.communication import (
+    CommunicationChannel,
+    MessageEncoder,
+    MessageDecoder,
+    CommunicatingPolicy,
+    MultiAgentCommunicationWrapper,
+)
 
 __all__ = [
     "MultiAgentPolicy",
@@ -44,4 +51,9 @@ __all__ = [
     "QMIXPolicy",
     "QMIXMixer",
     "MADDPGPolicy",
+    "CommunicationChannel",
+    "MessageEncoder",
+    "MessageDecoder",
+    "CommunicatingPolicy",
+    "MultiAgentCommunicationWrapper",
 ]
