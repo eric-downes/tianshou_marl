@@ -2,13 +2,12 @@
 """Test script to verify MARL installation and features are working."""
 
 import sys
-import traceback
-from typing import List, Tuple
 
-def test_import(module_path: str, feature_name: str) -> Tuple[bool, str]:
+
+def test_import(module_path: str, feature_name: str) -> tuple[bool, str]:
     """Test if a module can be imported."""
     try:
-        parts = module_path.rsplit('.', 1)
+        parts = module_path.rsplit(".", 1)
         if len(parts) == 2:
             exec(f"from {parts[0]} import {parts[1]}")
         else:
@@ -19,34 +18,28 @@ def test_import(module_path: str, feature_name: str) -> Tuple[bool, str]:
     except Exception as e:
         return False, f"❌ {feature_name}: Unexpected error: {e}"
 
-def test_marl_features() -> Tuple[bool, str]:
+
+def test_marl_features() -> tuple[bool, str]:
     """Test MARL features work correctly."""
     try:
-        import numpy as np
         from tianshou.env import EnhancedPettingZooEnv
-        from tianshou.algorithm.multiagent import FlexibleMultiAgentPolicyManager
-        
+
         # Create mock environment to test without PettingZoo
         class MockEnv:
             def __init__(self):
                 self.possible_agents = ["agent_0", "agent_1"]
-                self.observation_spaces = {
-                    "agent_0": None,
-                    "agent_1": None
-                }
-                self.action_spaces = {
-                    "agent_0": None,
-                    "agent_1": None
-                }
-        
+                self.observation_spaces = {"agent_0": None, "agent_1": None}
+                self.action_spaces = {"agent_0": None, "agent_1": None}
+
         # Test EnhancedPettingZooEnv detects parallel env
         mock_env = MockEnv()
         env = EnhancedPettingZooEnv(mock_env, mode="auto")
         assert env.mode == "parallel", "Failed to detect parallel environment"
-        
+
         return True, "✅ MARL features working"
     except Exception as e:
         return False, f"❌ MARL features test failed: {e}"
+
 
 def main():
     """Run all installation tests."""
@@ -54,11 +47,11 @@ def main():
     print("Tianshou MARL Installation Test")
     print("=" * 60)
     print()
-    
+
     # Core dependencies
     print("Testing Core Dependencies:")
     print("-" * 30)
-    
+
     tests = [
         ("tianshou", "Tianshou"),
         ("torch", "PyTorch"),
@@ -66,61 +59,67 @@ def main():
         ("gymnasium", "Gymnasium"),
         ("pytest", "Pytest"),
     ]
-    
+
     results = []
     for module, name in tests:
         success, msg = test_import(module, name)
         print(msg)
         results.append(success)
-    
+
     # MARL-specific dependencies
     print("\nTesting MARL Dependencies:")
     print("-" * 30)
-    
+
     marl_tests = [
         ("pettingzoo", "PettingZoo"),
         ("tianshou.env.EnhancedPettingZooEnv", "Enhanced PettingZoo Environment"),
-        ("tianshou.algorithm.multiagent.FlexibleMultiAgentPolicyManager", "Flexible Policy Manager"),
+        (
+            "tianshou.algorithm.multiagent.FlexibleMultiAgentPolicyManager",
+            "Flexible Policy Manager",
+        ),
     ]
-    
+
     for module, name in marl_tests:
         success, msg = test_import(module, name)
         print(msg)
         results.append(success)
-    
+
     # Functional test
     print("\nTesting MARL Functionality:")
     print("-" * 30)
     success, msg = test_marl_features()
     print(msg)
     results.append(success)
-    
+
     # Version info
     print("\nVersion Information:")
     print("-" * 30)
     try:
         import tianshou
+
         print(f"Tianshou version: {tianshou.__version__}")
     except:
         pass
-    
+
     try:
         import pettingzoo
+
         print(f"PettingZoo version: {pettingzoo.__version__}")
     except:
         print("PettingZoo not installed (optional but recommended for MARL)")
-    
+
     try:
         import torch
+
         print(f"PyTorch version: {torch.__version__}")
     except:
         pass
-    
+
     # Summary
     print("\n" + "=" * 60)
     total = len(results)
     passed = sum(results)
-    
+
     if passed == total:
         print(f"✅ All tests passed ({passed}/{total})")
         print("\nYour installation is ready for MARL experiments!")
@@ -137,6 +136,7 @@ def main():
         print("2. Install in editable mode: pip install -e .")
         print("3. Check you're in the right virtual environment")
         return 1
+
 
 if __name__ == "__main__":
     sys.exit(main())
