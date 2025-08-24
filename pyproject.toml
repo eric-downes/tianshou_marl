@@ -88,7 +88,7 @@ eval = ["rliable", "joblib", "scipy", "jsonargparse", "docstring-parser"]
 [tool.poetry.group.dev]
 optional = true
 [tool.poetry.group.dev.dependencies]
-black = { version = ">=23.7,<25.0", extras = ["jupyter"] }
+black = "23.11.0"
 docutils = "0.20.1"
 jinja2 = "*"
 jupyter = "^1.0.0"

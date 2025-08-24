@@ -103,7 +103,11 @@ class ActorFactoryDefault(ActorFactory):
 
     def _create_factory(self, envs: Environments) -> ActorFactory:
         env_type = envs.get_type()
-        factory: ActorFactoryContinuousDeterministicNet | ActorFactoryContinuousGaussianNet | ActorFactoryDiscreteNet
+        factory: (
+            ActorFactoryContinuousDeterministicNet
+            | ActorFactoryContinuousGaussianNet
+            | ActorFactoryDiscreteNet
+        )
         if env_type == EnvType.CONTINUOUS:
             match self.continuous_actor_type:
                 case ContinuousActorType.GAUSSIAN:

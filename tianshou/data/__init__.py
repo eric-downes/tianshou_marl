@@ -1,4 +1,5 @@
 """Data package."""
+
 # isort:skip_file
 
 from tianshou.data.batch import Batch

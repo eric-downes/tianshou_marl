@@ -17,8 +17,9 @@ class TestTensorBoardLogger:
         ],
     )
     def test_flatten_dict_basic(
-        input_dict: dict[str, int | dict[str, int | dict[str, int]]]
-        | dict[str, dict[str, dict[str, int]]],
+        input_dict: (
+            dict[str, int | dict[str, int | dict[str, int]]] | dict[str, dict[str, dict[str, int]]]
+        ),
         expected_output: dict[str, int],
     ) -> None:
         logger = TensorboardLogger(SummaryWriter("log/logger"))

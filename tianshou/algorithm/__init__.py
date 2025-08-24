@@ -1,4 +1,5 @@
 """Algorithm package."""
+
 # isort:skip_file
 
 from tianshou.algorithm.algorithm_base import Algorithm, TrainingStats

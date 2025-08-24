@@ -179,13 +179,16 @@ def download(url: str, fname: str, chunk_size: int | None = 1024) -> None:
     if os.path.exists(fname):
         print(f"Found cached file at {fname}.")
         return
-    with open(fname, "wb") as ofile, tqdm(
-        desc=fname,
-        total=total,
-        unit="iB",
-        unit_scale=True,
-        unit_divisor=1024,
-    ) as bar:
+    with (
+        open(fname, "wb") as ofile,
+        tqdm(
+            desc=fname,
+            total=total,
+            unit="iB",
+            unit_scale=True,
+            unit_divisor=1024,
+        ) as bar,
+    ):
         for data in resp.iter_content(chunk_size=chunk_size):
             size = ofile.write(data)
             bar.update(size)
