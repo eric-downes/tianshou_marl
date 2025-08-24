@@ -42,8 +42,8 @@ jobs:
       
       - name: Install dependencies
         run: |
-          # Install all dependencies using poetry for consistency
-          poetry install --no-interaction --no-ansi
+          # Install all dependencies including dev dependencies for consistency
+          poetry install --with dev --no-interaction --no-ansi
           echo "✅ All dependencies installed"
         timeout-minutes: 3
       
