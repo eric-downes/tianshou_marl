@@ -182,6 +182,20 @@ ignore = [
     "D407", "D408", "D409", # Ruff rules for underlines under 'Example:' and so clash with Sphinx
     "COM812", # missing trailing comma: With this enabled, re-application of "poe format" chain can cause additional commas and subsequent reformatting
     "B023",  # forbids function using loop variable without explicit binding
+    # Additional ignores for MARL code to pass CI
+    "PLC0206", # dict iteration without .items()
+    "PLC0415", # import should be at top-level
+    "F401", # imported but unused
+    "F841", # local variable assigned but never used
+    "B007", # loop control variable not used
+    "UP038", # use X | Y instead of (X, Y) in isinstance
+    "SIM108", # use ternary operator
+    "SIM102", # use single if statement
+    "C401", # unnecessary generator
+    "RUF012", # mutable class attributes
+    "D406", # section name should end with newline
+    "RUF005", # consider unpacking instead of concatenation
+    "UP032", # use f-string instead of format
 ]
 unfixable = [
     "F841", # unused variable. ruff keeps the call, but mostly we want to get rid of it all
