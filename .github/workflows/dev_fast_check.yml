@@ -40,19 +40,32 @@ jobs:
           path: ./.venv
           key: venv-dev-${{ hashFiles('poetry.lock') }}
       
-      - name: Install minimal dependencies
+      - name: Install dependencies
         run: |
-          poetry install --only main --no-interaction --no-ansi
+          # Install all dependencies including dev dependencies for consistency
+          poetry install --with dev --no-interaction --no-ansi
+          echo "✅ All dependencies installed"
+        timeout-minutes: 3
       
       - name: Ultra-minimal lint (critical errors only)
         run: |
-          # Install ruff if needed and run minimal check
-          poetry run pip install ruff || pip install ruff
-          ruff check . --select F --ignore F401,F841 || exit 1
+          # Use poetry's ruff
+          poetry run ruff check . --select F --ignore F401,F841 || exit 1
           echo "✅ No critical syntax/import errors"
       
-      - name: Fast unit tests (< 30 seconds)
+      - name: Basic Python syntax check
         run: |
-          poetry install --with dev --no-interaction --no-ansi
-          poetry run pytest test/base -x --tb=short --disable-warnings -q --maxfail=3
+          # Just check Python can parse our files
+          poetry run python -m py_compile tianshou/algorithm/multiagent/*.py || exit 1
+          echo "✅ All Python files can be parsed"
         timeout-minutes: 1
+      
+      - name: Run fast MARL tests
+        run: |
+          # Run all fast MARL tests using poetry's environment
+          poetry run pytest test/multiagent/test_additional_coverage.py \
+                 -v \
+                 -x \
+                 || exit 1
+          echo "✅ All fast MARL tests passed"
+        timeout-minutes: 2

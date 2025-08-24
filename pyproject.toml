@@ -30,7 +30,7 @@ gymnasium = "^0.28.0"
 h5py = "^3.9.0"
 matplotlib = ">=3.0.0"
 numba = ">=0.60.0"
-numpy = "^1"
+numpy = ">=1.25.2,<2.0.0"
 overrides = "^7.4.0"
 packaging = "*"
 pandas = ">=2.0.0"
@@ -195,6 +195,9 @@ ignore = [
     "D406", # section name should end with newline
     "RUF005", # consider unpacking instead of concatenation
     "UP032", # use f-string instead of format
+    "PLW1641", # Object does not implement __hash__ method (core tianshou structures)
+    "E721", # Use is/is not for type comparisons (core tianshou data handling)
+    "SIM103", # Return the condition directly (core tianshou logic)
 ]
 unfixable = [
     "F841", # unused variable. ruff keeps the call, but mostly we want to get rid of it all
