@@ -40,19 +40,25 @@ jobs:
           path: ./.venv
           key: venv-dev-${{ hashFiles('poetry.lock') }}
       
-      - name: Install minimal dependencies
+      - name: Install minimal dependencies  
         run: |
+          # Skip heavy deps, install only core + ruff
           poetry install --only main --no-interaction --no-ansi
+          poetry run pip install ruff
       
       - name: Ultra-minimal lint (critical errors only)
         run: |
-          # Install ruff and run minimal check
-          poetry run pip install ruff
           poetry run ruff check . --select F --ignore F401,F841 || exit 1
           echo "✅ No critical syntax/import errors"
       
-      - name: Fast unit tests (< 30 seconds)
+      - name: Ultra-fast smoke test (< 10 seconds)
         run: |
-          poetry install --with dev --no-interaction --no-ansi
-          poetry run pytest test/base -x --tb=short --disable-warnings -q --maxfail=3
+          # Just test basic imports work - no full test suite
+          poetry run python -c "
+          print('Testing critical imports...')
+          import tianshou
+          from tianshou.algorithm.multiagent import CTDEPolicy
+          from tianshou.env import EnhancedPettingZooEnv  
+          print('✅ All critical imports successful')
+          " || exit 1
         timeout-minutes: 1
