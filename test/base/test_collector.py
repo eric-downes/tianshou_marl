@@ -917,7 +917,7 @@ def test_collector_with_atari_setting() -> None:
             getattr(result_default_buffer_collect_12_steps, key),
             getattr(result_cached_buffer_collect_12_steps, key),
         )
-    _ = collector_default_buffer.collect(n_episode=9)
+    result2 = collector_default_buffer.collect(n_episode=9)
     for key in ["n_collected_episodes", "n_collected_steps", "returns", "lens"]:
         assert np.allclose(
             getattr(result2, key),

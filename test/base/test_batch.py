@@ -807,8 +807,8 @@ class TestBatchConversions:
         ],
     )
     def test_dist_to_atleast_2d_idempotent(dist: Distribution) -> None:
-        _ = dist_to_atleast_2d(dist)
-        _ = dist_to_atleast_2d(result1)
+        result1 = dist_to_atleast_2d(dist)
+        result2 = dist_to_atleast_2d(result1)
         assert result1 == result2
 
     @staticmethod
