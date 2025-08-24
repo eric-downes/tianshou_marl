@@ -247,7 +247,9 @@ class TestGlobalStateConstructor:
 
     def test_attention_based_constructor(self):
         """Test attention-based global state construction."""
-        constructor = GlobalStateConstructor(mode="attention", obs_dim=4, n_agents=3, hidden_dim=64)
+        constructor = GlobalStateConstructor(
+            mode="attention", obs_dim=4, n_agents=3, hidden_dim=64
+        )
 
         observations = {
             "agent_0": torch.randn(32, 4),
@@ -444,7 +446,7 @@ class TestMADDPG:
         # Get initial target network parameters
         initial_params = []
         for target_actor in policy.target_actors:
-            initial_params.append(list(target_actor.parameters())[0].clone())
+            initial_params.append(next(iter(target_actor.parameters())).clone())
 
         # Modify main network
         for actor in policy.actors:
@@ -456,7 +458,7 @@ class TestMADDPG:
 
         # Check soft update worked
         for i, target_actor in enumerate(policy.target_actors):
-            current_param = list(target_actor.parameters())[0]
+            current_param = next(iter(target_actor.parameters()))
             assert not torch.equal(current_param, initial_params[i])
 
     def test_maddpg_centralized_critic(self):
@@ -482,11 +484,15 @@ class TestMADDPG:
         # Critics should use all agents' observations and actions
         all_obs = torch.cat([batch[f"agent_{i}"].obs for i in range(n_agents)], dim=-1)
         # For continuous actions, they're already in the right shape
-        all_actions = torch.cat([batch[f"agent_{i}"].act for i in range(n_agents)], dim=-1)
+        all_actions = torch.cat(
+            [batch[f"agent_{i}"].act for i in range(n_agents)], dim=-1
+        )
 
         # Verify critic input dimensions
         critic_input = torch.cat([all_obs, all_actions], dim=-1)
-        assert critic_input.shape[1] == 4 * n_agents + 2 * n_agents  # obs + actions (2D each)
+        assert (
+            critic_input.shape[1] == 4 * n_agents + 2 * n_agents
+        )  # obs + actions (2D each)
 
     def test_maddpg_learn(self):
         """Test MADDPG learning step."""
@@ -536,7 +542,9 @@ class TestIntegration:
         for agent in env.agents:
             actor = MockActor()
             # For CTDEPolicy, critic uses global observations only (not actions)
-            critic = MockCritic(global_obs_dim=env.global_obs_dim, n_agents=env.n_agents)
+            critic = MockCritic(
+                global_obs_dim=env.global_obs_dim, n_agents=env.n_agents
+            )
             optim_actor = optim.Adam(actor.parameters())
             optim_critic = optim.Adam(critic.parameters())
 
@@ -550,7 +558,9 @@ class TestIntegration:
             )
 
         # Create policy manager
-        manager = FlexibleMultiAgentPolicyManager(policies=policies, env=env, mode="independent")
+        manager = FlexibleMultiAgentPolicyManager(
+            policies=policies, env=env, mode="independent"
+        )
 
         # Create trainer
         trainer = SimultaneousTrainer(policy_manager=manager)
@@ -607,7 +617,9 @@ class TestIntegration:
                 for key in batch[f"agent_{i}"].keys():
                     val = batch[f"agent_{i}"][key]
                     # Convert tensors to numpy
-                    flat_batch[f"agent_{i}_{key}"] = val.numpy() if hasattr(val, "numpy") else val
+                    flat_batch[f"agent_{i}_{key}"] = (
+                        val.numpy() if hasattr(val, "numpy") else val
+                    )
             buffer.add(flat_batch)
 
         # Sample and train
@@ -629,7 +641,11 @@ class TestIntegration:
                 if field_name in sampled:
                     val = sampled[field_name]
                     # Squeeze the extra dimension from batch_size=1 storage
-                    if isinstance(val, np.ndarray) and len(val.shape) > 1 and val.shape[1] == 1:
+                    if (
+                        isinstance(val, np.ndarray)
+                        and len(val.shape) > 1
+                        and val.shape[1] == 1
+                    ):
                         if key in ["obs", "obs_next"]:
                             # For observations, squeeze the batch=1 dimension but keep feature dims
                             val = val.squeeze(1)
@@ -654,7 +670,9 @@ class TestIntegration:
         obs, global_state_true, _ = env.reset()
 
         # Construct global state
-        obs_tensors = {agent: torch.tensor(obs[agent]).unsqueeze(0) for agent in env.agents}
+        obs_tensors = {
+            agent: torch.tensor(obs[agent]).unsqueeze(0) for agent in env.agents
+        }
         global_state_constructed = constructor.build(obs_tensors)
 
         # Compare

@@ -55,7 +55,7 @@ class FlexibleMultiAgentPolicyManager(MultiAgentPolicy):
         mode: Literal["independent", "shared", "grouped", "custom"] = "independent",
         agent_groups: dict[str, list[str]] | None = None,
         policy_mapping_fn: Callable[[str], str] | None = None,
-        **kwargs,
+        **kwargs: Any,
     ):
         """Initialize flexible multi-agent policy manager.
 
@@ -69,6 +69,7 @@ class FlexibleMultiAgentPolicyManager(MultiAgentPolicy):
                 - "custom": Use policy_mapping_fn
             agent_groups: Dict mapping group names to agent IDs (for "grouped" mode)
             policy_mapping_fn: Custom function mapping agent_id to policy_id
+            **kwargs: Additional arguments passed to parent class
 
         """
         self.mode = mode
@@ -120,11 +121,15 @@ class FlexibleMultiAgentPolicyManager(MultiAgentPolicy):
             if not self.agent_groups:
                 raise ValueError("Grouped mode requires agent_groups to be specified")
             if isinstance(policies, Policy):
-                raise ValueError("Grouped mode requires dict of policies mapped to group names")
+                raise ValueError(
+                    "Grouped mode requires dict of policies mapped to group names"
+                )
 
         elif self.mode == "custom":
             if not self.policy_mapping_fn:
-                raise ValueError("Custom mode requires policy_mapping_fn to be specified")
+                raise ValueError(
+                    "Custom mode requires policy_mapping_fn to be specified"
+                )
 
     def _build_policy_map(self, policies, agents) -> dict[str, Policy]:
         """Build agent-to-policy mapping based on configuration mode."""
@@ -195,7 +200,9 @@ class FlexibleMultiAgentPolicyManager(MultiAgentPolicy):
                 raise ValueError("Independent mode requires list or dict of policies")
 
     @override
-    def forward(self, batch: Batch, state: dict | Batch | None = None, **kwargs: Any) -> Batch:
+    def forward(
+        self, batch: Batch, state: dict | Batch | None = None, **kwargs: Any
+    ) -> Batch:
         """Forward pass through policies.
 
         Overrides parent to handle shared policies more efficiently.

@@ -98,21 +98,21 @@ def main():
         import tianshou
 
         print(f"Tianshou version: {tianshou.__version__}")
-    except:
+    except ImportError:
         pass
 
     try:
         import pettingzoo
 
         print(f"PettingZoo version: {pettingzoo.__version__}")
-    except:
+    except ImportError:
         print("PettingZoo not installed (optional but recommended for MARL)")
 
     try:
         import torch
 
         print(f"PyTorch version: {torch.__version__}")
-    except:
+    except ImportError:
         pass
 
     # Summary

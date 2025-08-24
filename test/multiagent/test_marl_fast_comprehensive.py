@@ -27,7 +27,9 @@ class MinimalPolicy(Policy):
     """Ultra-lightweight policy for fast testing."""
 
     def __init__(self):
-        super().__init__(observation_space=spaces.Box(-1, 1, (2,)), action_space=spaces.Discrete(2))
+        super().__init__(
+            observation_space=spaces.Box(-1, 1, (2,)), action_space=spaces.Discrete(2)
+        )
 
     def forward(self, batch: Batch, state=None, **kwargs):
         batch_size = len(batch.obs) if hasattr(batch.obs, "__len__") else 1
@@ -73,7 +75,7 @@ class TestEnhancedPettingZooFast:
 
         env = MinimalEnv(n_agents=2)
         wrapped = EnhancedPettingZooEnv(env)
-        assert wrapped.is_parallel == True
+        assert wrapped.is_parallel
         assert wrapped.num_agents == 2
 
     def test_parallel_reset(self):
@@ -167,7 +169,7 @@ class TestEnhancedPettingZooFast:
         env.metadata["custom_field"] = "test_value"
         wrapped = EnhancedPettingZooEnv(env)
 
-        assert wrapped.metadata["is_parallelizable"] == True
+        assert wrapped.metadata["is_parallelizable"]
         assert wrapped.metadata["custom_field"] == "test_value"
 
 
@@ -186,10 +188,14 @@ class TestFlexiblePolicyFast:
         env = MinimalEnv(n_agents=2)
         policies = {agent: MinimalPolicy() for agent in env.agents}
 
-        manager = FlexibleMultiAgentPolicyManager(policies=policies, env=env, mode="independent")
+        manager = FlexibleMultiAgentPolicyManager(
+            policies=policies, env=env, mode="independent"
+        )
 
         # Each agent should have its own policy
-        assert manager.policy_mapping["agent_0"] is not manager.policy_mapping["agent_1"]
+        assert (
+            manager.policy_mapping["agent_0"] is not manager.policy_mapping["agent_1"]
+        )
         assert len(manager.policies) == 2
 
     def test_shared_mode(self):
@@ -199,7 +205,9 @@ class TestFlexiblePolicyFast:
         env = MinimalEnv(n_agents=3)
         shared_policy = MinimalPolicy()
 
-        manager = FlexibleMultiAgentPolicyManager(policies=shared_policy, env=env, mode="shared")
+        manager = FlexibleMultiAgentPolicyManager(
+            policies=shared_policy, env=env, mode="shared"
+        )
 
         # All agents share same policy
         assert manager.policy_mapping["agent_0"] is manager.policy_mapping["agent_1"]
@@ -212,7 +220,10 @@ class TestFlexiblePolicyFast:
 
         env = MinimalEnv(n_agents=4)
         policies = {"team_a": MinimalPolicy(), "team_b": MinimalPolicy()}
-        agent_groups = {"team_a": ["agent_0", "agent_1"], "team_b": ["agent_2", "agent_3"]}
+        agent_groups = {
+            "team_a": ["agent_0", "agent_1"],
+            "team_b": ["agent_2", "agent_3"],
+        }
 
         manager = FlexibleMultiAgentPolicyManager(
             policies=policies, env=env, mode="grouped", agent_groups=agent_groups
@@ -222,7 +233,9 @@ class TestFlexiblePolicyFast:
         assert manager.policy_mapping["agent_0"] is manager.policy_mapping["agent_1"]
         assert manager.policy_mapping["agent_2"] is manager.policy_mapping["agent_3"]
         # Different teams have different policies
-        assert manager.policy_mapping["agent_0"] is not manager.policy_mapping["agent_2"]
+        assert (
+            manager.policy_mapping["agent_0"] is not manager.policy_mapping["agent_2"]
+        )
 
     def test_custom_mode(self):
         """Test custom policy mapping."""
@@ -250,7 +263,9 @@ class TestFlexiblePolicyFast:
         env = MinimalEnv(n_agents=2)
         policies = {agent: MinimalPolicy() for agent in env.agents}
 
-        manager = FlexibleMultiAgentPolicyManager(policies=policies, env=env, mode="independent")
+        manager = FlexibleMultiAgentPolicyManager(
+            policies=policies, env=env, mode="independent"
+        )
 
         # Create minimal batch
         obs = np.zeros((2, 2))
@@ -267,14 +282,18 @@ class TestFlexiblePolicyFast:
         env = MinimalEnv(n_agents=3)
         shared_policy = MinimalPolicy()
 
-        manager = FlexibleMultiAgentPolicyManager(policies=shared_policy, env=env, mode="shared")
+        manager = FlexibleMultiAgentPolicyManager(
+            policies=shared_policy, env=env, mode="shared"
+        )
 
         # Should use optimized path
         obs = np.zeros((3, 2))
         agent_ids = np.array(["agent_0", "agent_1", "agent_2"])
         batch = Batch(obs=Batch(obs=obs, agent_id=agent_ids))
 
-        with patch.object(shared_policy, "forward", wraps=shared_policy.forward) as mock_forward:
+        with patch.object(
+            shared_policy, "forward", wraps=shared_policy.forward
+        ) as mock_forward:
             result = manager(batch)
             # Should call policy only once for all agents
             assert mock_forward.call_count == 1
@@ -286,7 +305,9 @@ class TestFlexiblePolicyFast:
         env = MinimalEnv(n_agents=2)
         old_policy = MinimalPolicy()
 
-        manager = FlexibleMultiAgentPolicyManager(policies=old_policy, env=env, mode="shared")
+        manager = FlexibleMultiAgentPolicyManager(
+            policies=old_policy, env=env, mode="shared"
+        )
 
         # Update policy
         new_policy = MinimalPolicy()
@@ -307,7 +328,9 @@ class TestFlexiblePolicyFast:
 
         policies = {agent: MinimalPolicy() for agent in env.agents}
 
-        manager = FlexibleMultiAgentPolicyManager(policies=policies, env=env, mode="independent")
+        manager = FlexibleMultiAgentPolicyManager(
+            policies=policies, env=env, mode="independent"
+        )
 
         assert manager.agents == ["agent_0", "agent_1"]
 
@@ -324,7 +347,9 @@ class TestDictObservationFast:
         """Test DictObservationWrapper creation."""
         from tianshou.env import DictObservationWrapper
 
-        obs_space = spaces.Dict({"position": spaces.Box(-1, 1, (2,)), "id": spaces.Discrete(3)})
+        obs_space = spaces.Dict(
+            {"position": spaces.Box(-1, 1, (2,)), "id": spaces.Discrete(3)}
+        )
         policy = MinimalPolicy()
 
         wrapper = DictObservationWrapper(policy, obs_space)
@@ -516,7 +541,9 @@ class TestTrainingCoordinationFast:
         policies = {agent: MinimalPolicy() for agent in env.agents}
         manager = FlexibleMultiAgentPolicyManager(policies, env, "independent")
 
-        trainer = LeaguePlayTrainer(policy_manager=manager, league_size=4, matchmaking="random")
+        trainer = LeaguePlayTrainer(
+            policy_manager=manager, league_size=4, matchmaking="random"
+        )
 
         assert trainer.league_size == 4
         assert trainer.matchmaking == "random"
@@ -855,8 +882,11 @@ class TestIntegrationFast:
         agent_ids = np.array(env.agents)
         batch = Batch(obs=Batch(obs=obs_array, agent_id=agent_ids))
 
-        with patch.object(policies["agent_0"].actor, "forward", return_value=torch.randn(1, 2)):
-            with patch.object(policies["agent_1"].actor, "forward", return_value=torch.randn(1, 2)):
+        with patch.object(
+            policies["agent_0"].actor, "forward", return_value=torch.randn(1, 2)
+        ), patch.object(
+            policies["agent_1"].actor, "forward", return_value=torch.randn(1, 2)
+        ):
                 result = manager(batch)
                 assert "act" in result
 
@@ -974,7 +1004,9 @@ if __name__ == "__main__":
         TestIntegrationFast,
     ]
 
-    total_tests = sum(len([m for m in dir(cls) if m.startswith("test_")]) for cls in test_classes)
+    total_tests = sum(
+        len([m for m in dir(cls) if m.startswith("test_")]) for cls in test_classes
+    )
 
     print(f"Total fast tests: {total_tests}")
     print(f"Expected runtime: <{total_tests * 0.1:.1f} seconds")

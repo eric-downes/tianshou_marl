@@ -74,7 +74,9 @@ class CTDEPolicy(Policy):
         # Extract tau before passing kwargs to parent
         self.tau = kwargs.pop("tau", 0.005)  # Soft update parameter
 
-        super().__init__(observation_space=observation_space, action_space=action_space, **kwargs)
+        super().__init__(
+            observation_space=observation_space, action_space=action_space, **kwargs
+        )
 
         self.actor = actor
         self.critic = critic
@@ -106,7 +108,9 @@ class CTDEPolicy(Policy):
         import inspect
 
         sig = inspect.signature(
-            self.actor.forward if hasattr(self.actor, "forward") else self.actor.__call__
+            self.actor.forward
+            if hasattr(self.actor, "forward")
+            else self.actor.__call__
         )
 
         # Check if actor expects state parameter
@@ -211,13 +215,17 @@ class CTDEPolicy(Policy):
             for param, target_param in zip(
                 self.actor.parameters(), self.actor_target.parameters(), strict=False
             ):
-                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+                target_param.data.copy_(
+                    self.tau * param.data + (1 - self.tau) * target_param.data
+                )
 
         if hasattr(self, "critic_target"):
             for param, target_param in zip(
                 self.critic.parameters(), self.critic_target.parameters(), strict=False
             ):
-                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+                target_param.data.copy_(
+                    self.tau * param.data + (1 - self.tau) * target_param.data
+                )
 
     def _build_global_state(self, batch: Batch) -> torch.Tensor:
         """Construct global state from all agents' observations.
@@ -252,7 +260,9 @@ class GlobalStateConstructor(nn.Module):
 
     def __init__(
         self,
-        mode: Literal["concatenate", "mean", "attention", "graph", "custom"] = "concatenate",
+        mode: Literal[
+            "concatenate", "mean", "attention", "graph", "custom"
+        ] = "concatenate",
         obs_dim: int | None = None,
         n_agents: int | None = None,
         hidden_dim: int = 64,
@@ -280,7 +290,9 @@ class GlobalStateConstructor(nn.Module):
 
         if mode == "attention" and obs_dim and n_agents:
             # Attention-based aggregation
-            self.attention = nn.MultiheadAttention(embed_dim=obs_dim, num_heads=4, batch_first=True)
+            self.attention = nn.MultiheadAttention(
+                embed_dim=obs_dim, num_heads=4, batch_first=True
+            )
             self.output_proj = nn.Linear(obs_dim, hidden_dim)
 
         elif mode == "graph" and obs_dim:
@@ -300,12 +312,12 @@ class GlobalStateConstructor(nn.Module):
         """
         if self.mode == "concatenate":
             # Simple concatenation
-            obs_list = [obs for obs in observations.values()]
+            obs_list = list(observations.values())
             return torch.cat(obs_list, dim=-1)
 
         elif self.mode == "mean":
             # Mean aggregation
-            obs_list = [obs for obs in observations.values()]
+            obs_list = list(observations.values())
             obs_stack = torch.stack(obs_list, dim=0)  # [n_agents, batch, obs_dim]
             return obs_stack.mean(dim=0)  # [batch, obs_dim]
 
@@ -332,8 +344,12 @@ class GlobalStateConstructor(nn.Module):
             # Aggregate neighbors (using adjacency if provided)
             if self.adjacency_matrix is not None:
                 # Weighted aggregation based on adjacency
-                adj_expanded = self.adjacency_matrix.unsqueeze(0).expand(h.shape[0], -1, -1)
-                h_aggregated = torch.bmm(adj_expanded, h) / adj_expanded.sum(dim=-1, keepdim=True)
+                adj_expanded = self.adjacency_matrix.unsqueeze(0).expand(
+                    h.shape[0], -1, -1
+                )
+                h_aggregated = torch.bmm(adj_expanded, h) / adj_expanded.sum(
+                    dim=-1, keepdim=True
+                )
             else:
                 # Mean aggregation
                 h_aggregated = h.mean(dim=1, keepdim=True).expand_as(h)
@@ -349,7 +365,7 @@ class GlobalStateConstructor(nn.Module):
 
         else:
             # Default to concatenation
-            obs_list = [obs for obs in observations.values()]
+            obs_list = list(observations.values())
             return torch.cat(obs_list, dim=-1)
 
 
@@ -424,8 +440,7 @@ class CentralizedCritic(nn.Module):
         """
         x = F.relu(self.fc1(global_obs))
         x = F.relu(self.fc2(x))
-        q_values = self.fc3(x)
-        return q_values
+        return self.fc3(x)
 
 
 class QMIXMixer(nn.Module):
@@ -475,7 +490,9 @@ class QMIXMixer(nn.Module):
         # Hypernetwork for biases
         self.hyper_b1 = nn.Linear(state_dim, mixing_embed_dim)
         self.hyper_b2 = nn.Sequential(
-            nn.Linear(state_dim, mixing_embed_dim), nn.ReLU(), nn.Linear(mixing_embed_dim, 1)
+            nn.Linear(state_dim, mixing_embed_dim),
+            nn.ReLU(),
+            nn.Linear(mixing_embed_dim, 1),
         )
 
     def forward(self, q_values: torch.Tensor, state: torch.Tensor) -> torch.Tensor:
@@ -546,7 +563,9 @@ class QMIXPolicy(Policy):
             **kwargs: Additional parameters
 
         """
-        super().__init__(observation_space=observation_space, action_space=action_space, **kwargs)
+        super().__init__(
+            observation_space=observation_space, action_space=action_space, **kwargs
+        )
 
         self.actors = actors
         self.mixer = mixer
@@ -582,7 +601,9 @@ class QMIXPolicy(Policy):
 
         """
         # Check if this is a multi-agent batch or single observation
-        if hasattr(batch, "obs") and not any(key.startswith("agent_") for key in batch.keys()):
+        if hasattr(batch, "obs") and not any(
+            key.startswith("agent_") for key in batch.keys()
+        ):
             # Single observation batch - use first actor for simplicity
             obs = to_torch(batch.obs, device=self.device)
 
@@ -702,9 +723,9 @@ class QMIXPolicy(Policy):
 
         # TD target
         terminated = to_torch(batch["agent_0"].terminated, device=self.device)
-        td_target = rewards + self.discount_factor * q_total_next * (~terminated).float().unsqueeze(
-            -1
-        )
+        td_target = rewards + self.discount_factor * q_total_next * (
+            ~terminated
+        ).float().unsqueeze(-1)
 
         # Loss
         loss = F.mse_loss(q_total, td_target)
@@ -728,9 +749,13 @@ class QMIXPolicy(Policy):
         """
         for i in range(self.n_agents):
             for param, target_param in zip(
-                self.actors[i].parameters(), self.target_actors[i].parameters(), strict=False
+                self.actors[i].parameters(),
+                self.target_actors[i].parameters(),
+                strict=False,
             ):
-                target_param.data.copy_(tau * param.data + (1 - tau) * target_param.data)
+                target_param.data.copy_(
+                    tau * param.data + (1 - tau) * target_param.data
+                )
 
         for param, target_param in zip(
             self.mixer.parameters(), self.target_mixer.parameters(), strict=False
@@ -773,7 +798,9 @@ class MADDPGPolicy(Policy):
             **kwargs: Additional parameters
 
         """
-        super().__init__(observation_space=observation_space, action_space=action_space, **kwargs)
+        super().__init__(
+            observation_space=observation_space, action_space=action_space, **kwargs
+        )
 
         self.actors = actors
         self.critics = critics
@@ -789,7 +816,9 @@ class MADDPGPolicy(Policy):
             self.optimizer_actors = optimizer_actors
 
         if optimizer_critics is None:
-            self.optimizer_critics = [optim.Adam(critic.parameters()) for critic in critics]
+            self.optimizer_critics = [
+                optim.Adam(critic.parameters()) for critic in critics
+            ]
         else:
             self.optimizer_critics = optimizer_critics
 
@@ -873,12 +902,16 @@ class MADDPGPolicy(Policy):
                         if act_tensor.dim() == 1:
                             act_tensor = act_tensor.unsqueeze(-1)
                     all_actions.append(act_tensor)
-                    all_obs_next.append(to_torch(other_batch.obs_next, device=self.device))
+                    all_obs_next.append(
+                        to_torch(other_batch.obs_next, device=self.device)
+                    )
 
                     # Get next actions from target actor
                     with torch.no_grad():
                         if hasattr(self.target_actors[j], "forward"):
-                            next_actions, _ = self.target_actors[j](all_obs_next[-1], None)
+                            next_actions, _ = self.target_actors[j](
+                                all_obs_next[-1], None
+                            )
                         else:
                             next_actions = self.target_actors[j](all_obs_next[-1])
                         all_actions_next.append(next_actions)
@@ -897,7 +930,9 @@ class MADDPGPolicy(Policy):
             terminated = to_torch(agent_batch.terminated, device=self.device)
 
             # Current Q-value
-            q_value = self.critics[i](torch.cat([all_obs_concat, all_actions_concat], dim=-1))
+            q_value = self.critics[i](
+                torch.cat([all_obs_concat, all_actions_concat], dim=-1)
+            )
 
             # Target Q-value
             with torch.no_grad():
@@ -905,7 +940,10 @@ class MADDPGPolicy(Policy):
                     torch.cat([all_obs_next_concat, all_actions_next_concat], dim=-1)
                 )
                 td_target = (
-                    rewards + self.discount_factor * q_value_next.squeeze() * (~terminated).float()
+                    rewards
+                    + self.discount_factor
+                    * q_value_next.squeeze()
+                    * (~terminated).float()
                 )
 
             # Critic loss
@@ -942,8 +980,12 @@ class MADDPGPolicy(Policy):
             losses[f"{agent_id}_critic_loss"] = critic_loss.item()
 
         # Aggregate losses
-        losses["actor_loss"] = np.mean([v for k, v in losses.items() if "actor_loss" in k])
-        losses["critic_loss"] = np.mean([v for k, v in losses.items() if "critic_loss" in k])
+        losses["actor_loss"] = np.mean(
+            [v for k, v in losses.items() if "actor_loss" in k]
+        )
+        losses["critic_loss"] = np.mean(
+            [v for k, v in losses.items() if "critic_loss" in k]
+        )
 
         return losses
 
@@ -952,12 +994,20 @@ class MADDPGPolicy(Policy):
         for i in range(self.n_agents):
             # Update target actor
             for param, target_param in zip(
-                self.actors[i].parameters(), self.target_actors[i].parameters(), strict=False
+                self.actors[i].parameters(),
+                self.target_actors[i].parameters(),
+                strict=False,
             ):
-                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+                target_param.data.copy_(
+                    self.tau * param.data + (1 - self.tau) * target_param.data
+                )
 
             # Update target critic
             for param, target_param in zip(
-                self.critics[i].parameters(), self.target_critics[i].parameters(), strict=False
+                self.critics[i].parameters(),
+                self.target_critics[i].parameters(),
+                strict=False,
             ):
-                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+                target_param.data.copy_(
+                    self.tau * param.data + (1 - self.tau) * target_param.data
+                )
