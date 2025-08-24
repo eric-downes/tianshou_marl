@@ -69,6 +69,9 @@ class CTDEPolicy(Policy):
             discount_factor: Discount factor for future rewards
             **kwargs: Additional policy parameters
         """
+        # Extract tau before passing kwargs to parent
+        self.tau = kwargs.pop('tau', 0.005)  # Soft update parameter
+        
         super().__init__(observation_space=observation_space, action_space=action_space, **kwargs)
         
         self.actor = actor
@@ -78,7 +81,6 @@ class CTDEPolicy(Policy):
         self.enable_global_info = enable_global_info
         self.discount_factor = discount_factor
         self.device = "cpu"  # Default device
-        self.tau = kwargs.get('tau', 0.005)  # Soft update parameter
         
     def forward(self, batch: Batch, state: Optional[Any] = None, **kwargs) -> Batch:
         """Forward pass for action selection (decentralized execution).
@@ -556,13 +558,37 @@ class QMIXPolicy(Policy):
         """Forward pass for decentralized execution.
         
         Args:
-            batch: Multi-agent batch with observations
+            batch: Multi-agent batch with observations or single agent batch
             state: Optional RNN state
             **kwargs: Additional arguments
             
         Returns:
             Batch with actions for each agent
         """
+        # Check if this is a multi-agent batch or single observation
+        if hasattr(batch, 'obs') and not any(key.startswith("agent_") for key in batch.keys()):
+            # Single observation batch - use first actor for simplicity
+            obs = to_torch(batch.obs, device=self.device)
+            
+            # Get Q-values from first actor
+            actor_out = self.actors[0](obs)
+            # Handle tuple return (q_values, state) or just q_values
+            if isinstance(actor_out, tuple):
+                q_values = actor_out[0]
+            else:
+                q_values = actor_out
+            
+            # Epsilon-greedy action selection
+            if np.random.random() < self.epsilon:
+                # Random action
+                actions = torch.randint(0, self.action_space.n, (obs.shape[0],))
+            else:
+                # Greedy action
+                actions = q_values.argmax(dim=-1)
+            
+            return Batch(act=actions, state=state)
+        
+        # Multi-agent batch
         result = Batch()
         
         for i, agent_id in enumerate(batch.keys()):

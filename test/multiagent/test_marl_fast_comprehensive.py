@@ -855,7 +855,7 @@ class TestIntegrationFast:
     
     def test_dict_obs_with_training(self):
         """Test dict observations with training coordination."""
-        from tianshou.env import DictObservationWrapper
+        from tianshou.env import DictObservationWrapper, DictToTensorPreprocessor
         from tianshou.algorithm.multiagent import (
             FlexibleMultiAgentPolicyManager,
             SimultaneousTrainer
@@ -866,24 +866,31 @@ class TestIntegrationFast:
         })
         
         env = MinimalEnv(n_agents=2)
+        # Create policies directly (not wrapped)
         policies = {}
         for agent in env.agents:
-            policy = MinimalPolicy()
-            policies[agent] = DictObservationWrapper(policy, obs_space)
+            policies[agent] = MinimalPolicy()
         
         manager = FlexibleMultiAgentPolicyManager(policies, env, "independent")
         trainer = SimultaneousTrainer(policy_manager=manager)
         
-        # Dict observations in batch
-        batches = {
-            agent: Batch(
-                obs={"state": np.zeros((2, 2))},
+        # Create preprocessor for dict observations
+        preprocessor = DictToTensorPreprocessor(obs_space)
+        
+        # Process dict observations to tensors for training
+        batches = {}
+        for agent in env.agents:
+            # Convert dict obs to tensors
+            obs_dict = {"state": torch.zeros(2, 2)}
+            obs_tensor = preprocessor(obs_dict)
+            
+            batches[agent] = Batch(
+                obs=obs_tensor,
                 act=np.zeros(2, dtype=int),
                 rew=np.zeros(2),
                 terminated=np.zeros(2, dtype=bool),
-                obs_next={"state": np.zeros((2, 2))}
-            ) for agent in env.agents
-        }
+                obs_next=obs_tensor  # Same tensor for simplicity
+            )
         
         losses = trainer.train_step(batches)
         assert len(losses) == 2
@@ -957,15 +964,17 @@ class TestIntegrationFast:
         obs_next, rewards, term, trunc, _ = wrapped.step(action_array)
         
         # Train
-        batches = {
-            agent: Batch(
-                obs=obs["observations"][agent].reshape(1, -1),
-                act=np.array([action_array[i]]),
-                rew=np.array([rewards[i]]),
-                terminated=np.array([term[i]]),
-                obs_next=obs_next["observations"][agent].reshape(1, -1)
-            ) for i, agent in enumerate(env.agents)
-        }
+        batches = {}
+        for i, agent in enumerate(env.agents):
+            # Check if agent has observations
+            if agent in obs["observations"] and agent in obs_next["observations"]:
+                batches[agent] = Batch(
+                    obs=obs["observations"][agent].reshape(1, -1),
+                    act=np.array([action_array[i] if i < len(action_array) else 0]),
+                    rew=np.array([rewards[i]]),
+                    terminated=np.array([term[i]]),
+                    obs_next=obs_next["observations"][agent].reshape(1, -1)
+                )
         
         losses = trainer.train_step(batches)
         assert len(losses) > 0

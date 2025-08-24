@@ -142,15 +142,18 @@ class EnhancedPettingZooEnv(PettingZooEnv):
             # Create masks for all agents
             masks = {}
             for agent in self.agents:
-                if isinstance(observations[agent], dict) and "action_mask" in observations[agent]:
-                    masks[agent] = [m == 1 for m in observations[agent]["action_mask"]]
+                if agent in observations:
+                    if isinstance(observations[agent], dict) and "action_mask" in observations[agent]:
+                        masks[agent] = [m == 1 for m in observations[agent]["action_mask"]]
+                    else:
+                        masks[agent] = [True] * self.action_space.n
                 else:
-                    masks[agent] = [True] * self.action_space.n
+                    masks[agent] = [False] * self.action_space.n
             obs_dict["masks"] = masks
         
         return obs_dict, infos
     
-    def step(self, action: Union[int, np.ndarray, Dict[str, Any]]) -> tuple[dict, list, bool, bool, dict]:
+    def step(self, action: Union[int, np.ndarray, Dict[str, Any]]) -> tuple[dict, list, Union[bool, list], Union[bool, list], dict]:
         """Take a step in the environment.
         
         Args:
@@ -169,7 +172,7 @@ class EnhancedPettingZooEnv(PettingZooEnv):
         else:
             return super().step(action)
     
-    def _parallel_step(self, action: Union[Dict[str, Any], np.ndarray]) -> tuple[dict, list, bool, bool, dict]:
+    def _parallel_step(self, action: Union[Dict[str, Any], np.ndarray]) -> tuple[dict, list, list, list, dict]:
         """Step in parallel environment."""
         # Convert array actions to dict if needed
         if isinstance(action, (np.ndarray, list)):
@@ -187,9 +190,13 @@ class EnhancedPettingZooEnv(PettingZooEnv):
         for agent, reward in rewards.items():
             reward_list[self.agent_idx[agent]] = reward
         
-        # Aggregate termination/truncation (any agent terminates/truncates = episode ends)
-        terminated = any(terminations.values())
-        truncated = any(truncations.values())
+        # Convert terminations/truncations to list format (indexed by agent_idx)
+        term_list = [False] * len(self.agents)
+        trunc_list = [False] * len(self.agents)
+        for agent, term in terminations.items():
+            term_list[self.agent_idx[agent]] = term
+        for agent, trunc in truncations.items():
+            trunc_list[self.agent_idx[agent]] = trunc
         
         # Format observations
         obs_dict = {
@@ -201,13 +208,18 @@ class EnhancedPettingZooEnv(PettingZooEnv):
         if isinstance(self.action_space, spaces.Discrete):
             masks = {}
             for agent in self.agents:
-                if isinstance(observations[agent], dict) and "action_mask" in observations[agent]:
-                    masks[agent] = [m == 1 for m in observations[agent]["action_mask"]]
+                # Check if agent still has observations (not terminated)
+                if agent in observations:
+                    if isinstance(observations[agent], dict) and "action_mask" in observations[agent]:
+                        masks[agent] = [m == 1 for m in observations[agent]["action_mask"]]
+                    else:
+                        masks[agent] = [True] * self.action_space.n
                 else:
-                    masks[agent] = [True] * self.action_space.n
+                    # Agent is terminated, no valid actions
+                    masks[agent] = [False] * self.action_space.n
             obs_dict["masks"] = masks
         
-        return obs_dict, reward_list, terminated, truncated, infos
+        return obs_dict, reward_list, term_list, trunc_list, infos
     
     def close(self) -> None:
         """Close environment."""

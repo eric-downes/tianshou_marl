@@ -73,6 +73,7 @@ class FlexibleMultiAgentPolicyManager(MultiAgentPolicy):
         self.agent_groups = agent_groups or {}
         self.policy_mapping_fn = policy_mapping_fn
         self.env = env
+        self.agents = env.agents  # Store agents list
         
         # Validate configuration
         self._validate_config(policies)

@@ -287,7 +287,15 @@ class SimultaneousTrainer(MATrainer):
         self.step_count += 1
         losses = {}
         
-        for agent_id in self.policy_manager.policies.keys():
+        # Get agents to train
+        if self.policy_manager.mode == "shared":
+            # For shared mode, train all agents together
+            agents_to_train = self.policy_manager.agents
+        else:
+            # For other modes, use policies keys
+            agents_to_train = self.policy_manager.policies.keys()
+        
+        for agent_id in agents_to_train:
             # Check training frequency
             freq = self.agent_train_freq.get(agent_id, 1)
             if self.step_count % freq != 0:
@@ -295,11 +303,16 @@ class SimultaneousTrainer(MATrainer):
                 
             if agent_id in batch:
                 agent_batch = batch[agent_id]
-                policy = self.policy_manager.policies[agent_id]
-                
-                # Train the policy
-                policy.train()
-                losses[agent_id] = policy.learn(agent_batch)
+                # Get policy for this agent
+                if self.policy_manager.mode == "shared":
+                    policy = self.policy_manager.policies["shared"]
+                else:
+                    policy = self.policy_manager.policies.get(agent_id)
+                    
+                if policy:
+                    # Train the policy
+                    policy.train()
+                    losses[agent_id] = policy.learn(agent_batch)
                 
         return losses
 
