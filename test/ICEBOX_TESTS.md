@@ -1,9 +1,12 @@
-# Icebox Tests
+# Removed Unstable Tests
 
-These tests are currently disabled due to various issues. They should be fixed and re-enabled when possible.
+These tests were removed because they were unstable and unreliable. This document describes what they were testing and proposes alternative testing strategies.
 
-## Status: 🧊 Icebox
-These are long-term issues not actively being worked on.
+## Why These Tests Were Removed
+- Unstable results between runs
+- No clear performance bounds established
+- Not suitable for CI/CD pipeline
+- The `@pytest.mark.slow` marker is for reliable but time-consuming tests, not unstable ones
 
 ---
 
@@ -14,11 +17,18 @@ These are long-term issues not actively being worked on.
 - The test trains a pistonball agent but has no assertion to verify performance
 - The assertion line is commented out: `# assert result.best_reward >= args.win_rate`
 
-**Work Needed:**
-1. Determine appropriate performance bounds for pistonball environment
-2. Validate that the training achieves consistent results
-3. Uncomment and update the assertion with validated performance threshold
-4. Remove the @pytest.mark.skip decorator
+**What It Was Testing:**
+- Training convergence on PistonBall environment
+- Multi-agent coordination in cooperative task
+- PPO algorithm performance in continuous action space
+
+**Alternative Testing Strategy:**
+Instead of full training runs, we should test:
+1. **Integration test**: Verify agent can interact with PistonBall environment (1-2 episodes)
+2. **Policy update test**: Verify gradients flow and loss decreases over a few updates
+3. **Action validity test**: Ensure actions are within valid bounds
+4. **Multi-agent coordination test**: Verify agents receive and process observations correctly
+5. Create a separate benchmark script (not a test) for performance validation
 
 ---
 
@@ -30,20 +40,42 @@ These are long-term issues not actively being worked on.
 - Results are not consistent between runs
 - The assertion is commented out: `# assert result.best_reward >= 30.0`
 
-**Work Needed:**
-1. Optimize training parameters to reduce runtime
-2. Investigate source of instability (random seeds, environment dynamics, etc.)
-3. Establish stable performance bounds
-4. Consider marking as @pytest.mark.slow instead of skipping entirely
-5. Remove the @pytest.mark.skip decorator once stable
+**What It Was Testing:**
+- Continuous action space handling in PistonBall
+- SAC/TD3 algorithm convergence 
+- Long-horizon multi-agent learning
+
+**Alternative Testing Strategy:**
+Instead of full training runs, we should test:
+1. **Environment wrapper test**: Verify continuous action space is properly handled
+2. **Batch collection test**: Ensure proper data collection over a few steps
+3. **Replay buffer test**: Verify experience replay works with continuous actions
+4. **Actor-critic update test**: Check that both networks update properly
+5. Move performance testing to dedicated benchmark suite outside of unit tests
 
 ---
 
-## Notes for Contributors
+## Implementation Plan
 
-When working on these tests:
-1. Run tests in isolation first to establish baseline behavior
-2. Document any changes to expected performance bounds
-3. Ensure tests are deterministic (use fixed random seeds)
-4. Consider adding @pytest.mark.slow for long-running tests instead of skipping
-5. Update this document when tests are re-enabled
+### Short-term (Quick Wins)
+Create lightweight integration tests that verify:
+- Environment can be instantiated and reset
+- Agents can take actions and receive observations
+- Basic training loop executes without errors (1-2 iterations)
+
+### Medium-term
+Develop a test suite that validates components without full training:
+- Policy gradient computation
+- Value function updates
+- Multi-agent batch handling
+- Communication between agents (if applicable)
+
+### Long-term
+Create a separate benchmarking framework:
+- Not part of the test suite
+- Runs nightly or on-demand
+- Tracks performance metrics over time
+- Uses fixed seeds and hyperparameters for reproducibility
+
+## Key Principle
+**Unit tests should be fast and deterministic.** Performance benchmarking should be separate from the test suite.
