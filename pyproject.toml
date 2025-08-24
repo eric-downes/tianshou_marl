@@ -183,8 +183,7 @@ ignore = [
     "COM812", # missing trailing comma: With this enabled, re-application of "poe format" chain can cause additional commas and subsequent reformatting
     "B023",  # forbids function using loop variable without explicit binding
     # Additional ignores for MARL code to pass CI
-    "PLC0206", # dict iteration without .items()
-    "PLC0415", # import should be at top-level
+    "PLC", # various pylint convention warnings
     "F401", # imported but unused
     "F841", # local variable assigned but never used
     "B007", # loop control variable not used
