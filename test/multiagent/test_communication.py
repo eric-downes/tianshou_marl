@@ -602,7 +602,6 @@ class TestMultiAgentCommunicationWrapper:
             assert policy.communication_enabled
 
 
-@pytest.mark.fast
 class TestIntegration:
     """Integration tests for communication system."""
     
