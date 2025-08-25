@@ -96,7 +96,6 @@ def create_mock_batch(n_agents: int = 3, batch_size: int = 32) -> Batch:
     return batch
 
 
-@pytest.mark.slow
 class TestMATrainer:
     """Test base MATrainer class."""
 
@@ -139,7 +138,6 @@ class TestMATrainer:
         assert "loss" in result
 
 
-@pytest.mark.slow
 class TestSimultaneousTrainer:
     """Test simultaneous training mode."""
 
@@ -209,7 +207,6 @@ class TestSimultaneousTrainer:
         assert policies["agent_2"].learn_count == 1
 
 
-@pytest.mark.slow
 class TestSequentialTrainer:
     """Test sequential training mode."""
 
@@ -270,7 +267,6 @@ class TestSequentialTrainer:
         assert policies["agent_1"].learn_count == 0
 
 
-@pytest.mark.slow
 class TestSelfPlayTrainer:
     """Test self-play training mode."""
 
@@ -402,7 +398,6 @@ class TestSelfPlayTrainer:
         assert samples.count(2) > samples.count(0)
 
 
-@pytest.mark.slow
 class TestLeaguePlayTrainer:
     """Test league play training mode."""
 
@@ -470,7 +465,6 @@ class TestLeaguePlayTrainer:
         assert len(relegated) == 1
 
 
-@pytest.mark.slow
 class TestIntegration:
     """Integration tests for training coordination."""
 
