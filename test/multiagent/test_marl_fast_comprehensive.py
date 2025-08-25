@@ -49,6 +49,14 @@ class MinimalEnv:
         self.action_spaces = {a: spaces.Discrete(2) for a in self.agents}
         self.metadata = {"is_parallelizable": True}
 
+    def observation_space(self, agent):
+        """Return observation space for an agent."""
+        return self.observation_spaces[agent]
+
+    def action_space(self, agent):
+        """Return action space for an agent."""
+        return self.action_spaces[agent]
+
     def reset(self):
         return {a: np.zeros(2) for a in self.agents}, {a: {} for a in self.agents}
 
@@ -74,7 +82,7 @@ class TestEnhancedPettingZooFast:
         from tianshou.env import EnhancedPettingZooEnv
 
         env = MinimalEnv(n_agents=2)
-        wrapped = EnhancedPettingZooEnv(env)
+        wrapped = EnhancedPettingZooEnv(env, mode="parallel")
         assert wrapped.is_parallel
         assert wrapped.num_agents == 2
 
@@ -83,7 +91,7 @@ class TestEnhancedPettingZooFast:
         from tianshou.env import EnhancedPettingZooEnv
 
         env = MinimalEnv(n_agents=2)
-        wrapped = EnhancedPettingZooEnv(env)
+        wrapped = EnhancedPettingZooEnv(env, mode="parallel")
         obs, info = wrapped.reset()
 
         assert "observations" in obs
@@ -96,7 +104,7 @@ class TestEnhancedPettingZooFast:
         from tianshou.env import EnhancedPettingZooEnv
 
         env = MinimalEnv(n_agents=2)
-        wrapped = EnhancedPettingZooEnv(env)
+        wrapped = EnhancedPettingZooEnv(env, mode="parallel")
         wrapped.reset()
 
         actions = np.array([0, 1])
@@ -112,7 +120,7 @@ class TestEnhancedPettingZooFast:
 
         env = MinimalEnv(n_agents=2)
         env.action_mask = lambda agent: [True, False]  # Mock action mask
-        wrapped = EnhancedPettingZooEnv(env)
+        wrapped = EnhancedPettingZooEnv(env, mode="parallel")
 
         obs, _ = wrapped.reset()
         assert "masks" in obs
@@ -124,7 +132,7 @@ class TestEnhancedPettingZooFast:
         from tianshou.env import EnhancedPettingZooEnv
 
         env = MinimalEnv(n_agents=2)
-        wrapped = EnhancedPettingZooEnv(env)
+        wrapped = EnhancedPettingZooEnv(env, mode="parallel")
         wrapped.reset()
 
         # Test with dict actions
@@ -137,7 +145,7 @@ class TestEnhancedPettingZooFast:
         from tianshou.env import EnhancedPettingZooEnv
 
         env = MinimalEnv(n_agents=2)
-        wrapped = EnhancedPettingZooEnv(env)
+        wrapped = EnhancedPettingZooEnv(env, mode="parallel")
         wrapped.reset()
 
         # Test with array actions
@@ -150,7 +158,7 @@ class TestEnhancedPettingZooFast:
         from tianshou.env import EnhancedPettingZooEnv
 
         env = MinimalEnv(n_agents=3)
-        wrapped = EnhancedPettingZooEnv(env)
+        wrapped = EnhancedPettingZooEnv(env, mode="parallel")
         obs, _ = wrapped.reset()
 
         # Simulate agent termination
@@ -167,7 +175,7 @@ class TestEnhancedPettingZooFast:
 
         env = MinimalEnv(n_agents=2)
         env.metadata["custom_field"] = "test_value"
-        wrapped = EnhancedPettingZooEnv(env)
+        wrapped = EnhancedPettingZooEnv(env, mode="parallel")
 
         assert wrapped.metadata["is_parallelizable"]
         assert wrapped.metadata["custom_field"] == "test_value"
@@ -795,7 +803,7 @@ class TestIntegrationFast:
         from tianshou.env import EnhancedPettingZooEnv
 
         env = MinimalEnv(n_agents=2)
-        wrapped = EnhancedPettingZooEnv(env)
+        wrapped = EnhancedPettingZooEnv(env, mode="parallel")
 
         policies = MinimalPolicy()  # Shared policy
         manager = FlexibleMultiAgentPolicyManager(policies, env, "shared")
@@ -900,7 +908,7 @@ class TestIntegrationFast:
 
         # Setup
         env = MinimalEnv(n_agents=2)
-        wrapped = EnhancedPettingZooEnv(env)
+        wrapped = EnhancedPettingZooEnv(env, mode="parallel")
 
         policies = MinimalPolicy()  # Shared
         manager = FlexibleMultiAgentPolicyManager(policies, env, "shared")
@@ -950,7 +958,7 @@ class TestIntegrationFast:
 
         # Setup
         env = MinimalEnv(n_agents=4)
-        wrapped = EnhancedPettingZooEnv(env)
+        wrapped = EnhancedPettingZooEnv(env, mode="parallel")
         policies = {agent: MinimalPolicy() for agent in env.agents}
         manager = FlexibleMultiAgentPolicyManager(policies, env, "independent")
         trainer = SimultaneousTrainer(policy_manager=manager)

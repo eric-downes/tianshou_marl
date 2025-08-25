@@ -94,9 +94,10 @@ class TestEnhancedPettingZooEnvCoverage:
         from gymnasium import spaces
 
         from tianshou.env.enhanced_pettingzoo_env import EnhancedPettingZooEnv
+        from pettingzoo.utils.env import ParallelEnv
 
         # Mock parallel environment with identical spaces for all agents
-        mock_parallel_env = Mock()
+        mock_parallel_env = Mock(spec=ParallelEnv)
         mock_obs_space = spaces.Box(low=0, high=1, shape=(4,))
         mock_act_space = spaces.Discrete(2)
         mock_parallel_env.observation_spaces = {
@@ -109,6 +110,7 @@ class TestEnhancedPettingZooEnvCoverage:
         }
         mock_parallel_env.agents = ["agent_0", "agent_1"]
         mock_parallel_env.possible_agents = ["agent_0", "agent_1"]
+        mock_parallel_env.reset = Mock(return_value=({"agent_0": np.zeros(4), "agent_1": np.zeros(4)}, {}))
 
         env = EnhancedPettingZooEnv(mock_parallel_env, mode="auto")
         assert env.mode == "parallel"

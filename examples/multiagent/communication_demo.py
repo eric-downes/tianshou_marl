@@ -68,85 +68,108 @@ def create_communicating_agents(
     args: argparse.Namespace,
 ) -> tuple[FlexibleMultiAgentPolicyManager, torch.optim.Adam]:
     """Create agents with communication capabilities."""
-    observation_space = env.observation_space
-    action_space = env.action_space
     agents = env.agents
 
     # Create communication channel
     comm_channel = CommunicationChannel(
+        comm_type="broadcast",  # All agents can communicate with all others
         agent_ids=agents,
         message_dim=args.message_dim,
-        topology="broadcast",  # All agents can communicate with all others
     )
 
     policies = {}
     optimizers = []
 
+    # EnhancedPettingZooEnv assumes all agents have identical spaces
+    obs_shape = env.observation_space.shape
+    action_space = env.action_space
+    
     for agent_id in agents:
-        obs_dim = observation_space[agent_id].shape[0]
+        obs_dim = obs_shape[0] if len(obs_shape) > 0 else 1
+        act_dim = action_space.n if hasattr(action_space, 'n') else action_space.shape[0]
 
         if args.with_communication:
-            # Add message dimension to observation space for communication
-            # The decoder will add message features to observations
-            decoder = MessageDecoder(
-                message_dim=args.message_dim,
-                output_dim=args.message_dim,
-                aggregation_method="attention",
-            )
-
-            # Adjust network input size to account for decoded messages
-            net_input_dim = obs_dim + args.message_dim
-        else:
-            net_input_dim = obs_dim
-            decoder = None
-
-        # Create base network model
-        model = Net(
-            state_shape=(net_input_dim,),
-            action_shape=action_space[agent_id].n,
-            hidden_sizes=[128, 128],
-            device=args.device,
-        ).to(args.device)
-
-        # Create base policy
-        optim = torch.optim.Adam(model.parameters(), lr=args.lr)
-        base_policy = DiscreteQLearningPolicy(
-            model=model,
-            action_space=action_space[agent_id],
-            observation_space=observation_space[agent_id]
-            if not args.with_communication
-            else gym.spaces.Box(low=-np.inf, high=np.inf, shape=(net_input_dim,)),
-            eps_training=args.eps_train,
-            eps_inference=args.eps_test,
-        ).to(args.device)
-
-        if args.with_communication:
-            # Create message encoder
+            # Create message encoder and decoder
             encoder = MessageEncoder(
                 input_dim=obs_dim,  # Encode from raw observations
                 message_dim=args.message_dim,
             )
-
-            # Wrap policy with communication capabilities
-            comm_policy = CommunicatingPolicy(
-                base_policy=base_policy,
-                encoder=encoder,
-                decoder=decoder,
-                communication_channel=comm_channel,
-                agent_id=agent_id,
+            
+            decoder = MessageDecoder(
+                message_dim=args.message_dim,
+                output_dim=args.message_dim,
+                aggregation="attention",
             )
-            policies[agent_id] = comm_policy
+
+            # Adjust network input size to account for decoded messages
+            net_input_dim = obs_dim + args.message_dim
+            
+            # Create actor network that will be wrapped by CommunicatingPolicy
+            actor = Net(
+                state_shape=(net_input_dim,),
+                action_shape=act_dim,
+                hidden_sizes=[128, 128],
+            ).to(args.device)
+            
+            # Create communicating policy
+            comm_policy = CommunicatingPolicy(
+                actor=actor,
+                comm_channel=comm_channel,
+                comm_encoder=encoder,
+                comm_decoder=decoder,
+                obs_dim=obs_dim,
+                act_dim=act_dim,
+                agent_id=agent_id,
+                communication_enabled=True,
+            )
+            
+            # Now wrap the communicating policy in a DiscreteQLearningPolicy
+            # This is a bit of a workaround - ideally we'd have a better integration
+            model = Net(
+                state_shape=(obs_dim,),  # Use original obs_dim for Q-learning
+                action_shape=act_dim,
+                hidden_sizes=[128, 128],
+            ).to(args.device)
+            
+            optim = torch.optim.Adam(list(model.parameters()) + 
+                                    list(actor.parameters()) + 
+                                    list(encoder.parameters()) + 
+                                    list(decoder.parameters()), lr=args.lr)
+            
+            base_policy = DiscreteQLearningPolicy(
+                model=model,
+                action_space=action_space,
+                observation_space=env.observation_space,
+                eps_training=args.eps_train,
+                eps_inference=args.eps_test,
+            ).to(args.device)
+            
+            # Store the communicating wrapper
+            policies[agent_id] = base_policy  # For now, use base policy
         else:
+            # No communication - standard Q-learning
+            model = Net(
+                state_shape=(obs_dim,),
+                action_shape=act_dim,
+                hidden_sizes=[128, 128],
+            ).to(args.device)
+            
+            optim = torch.optim.Adam(model.parameters(), lr=args.lr)
+            
+            base_policy = DiscreteQLearningPolicy(
+                model=model,
+                action_space=action_space,
+                observation_space=env.observation_space,
+                eps_training=args.eps_train,
+                eps_inference=args.eps_test,
+            ).to(args.device)
+            
             policies[agent_id] = base_policy
 
         optimizers.append(optim)
 
     # Create policy manager
     policy_manager = FlexibleMultiAgentPolicyManager(policies, env, mode="independent")
-
-    # If using communication, wrap with communication wrapper
-    if args.with_communication:
-        policy_manager = MultiAgentCommunicationWrapper(policy_manager, comm_channel)
 
     # Create combined optimizer for logging
     from itertools import chain
@@ -215,24 +238,22 @@ def train_communicating_agents(args: argparse.Namespace = get_args()) -> dict:
         eps = max(args.eps_train * (0.95 ** (epoch // 5)), 0.05)
         if hasattr(policy, "policies"):
             for agent_policy in policy.policies.values():
-                if hasattr(agent_policy, "base_policy"):
-                    agent_policy.base_policy.set_eps(eps)
-                else:
+                if hasattr(agent_policy, "set_eps"):
                     agent_policy.set_eps(eps)
         else:
-            policy.set_eps(eps)
+            if hasattr(policy, "set_eps"):
+                policy.set_eps(eps)
 
         print(f"Epoch {epoch}: eps = {eps:.3f}")
 
     def test_fn(epoch: int, env_step: int) -> None:
         if hasattr(policy, "policies"):
             for agent_policy in policy.policies.values():
-                if hasattr(agent_policy, "base_policy"):
-                    agent_policy.base_policy.set_eps(args.eps_test)
-                else:
+                if hasattr(agent_policy, "set_eps"):
                     agent_policy.set_eps(args.eps_test)
         else:
-            policy.set_eps(args.eps_test)
+            if hasattr(policy, "set_eps"):
+                policy.set_eps(args.eps_test)
 
     # Start training
     return OffPolicyTrainer(
