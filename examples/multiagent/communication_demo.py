@@ -68,8 +68,6 @@ def create_communicating_agents(
     args: argparse.Namespace,
 ) -> tuple[FlexibleMultiAgentPolicyManager, torch.optim.Adam]:
     """Create agents with communication capabilities."""
-    observation_space = env.observation_space
-    action_space = env.action_space
     agents = env.agents
 
     # Create communication channel
@@ -82,8 +80,12 @@ def create_communicating_agents(
     policies = {}
     optimizers = []
 
+    # EnhancedPettingZooEnv assumes all agents have identical spaces
+    obs_shape = env.observation_space.shape
+    action_space = env.action_space
+    
     for agent_id in agents:
-        obs_dim = observation_space[agent_id].shape[0]
+        obs_dim = obs_shape[0] if len(obs_shape) > 0 else 1
 
         if args.with_communication:
             # Add message dimension to observation space for communication
@@ -91,7 +93,7 @@ def create_communicating_agents(
             decoder = MessageDecoder(
                 message_dim=args.message_dim,
                 output_dim=args.message_dim,
-                aggregation_method="attention",
+                aggregation="attention",
             )
 
             # Adjust network input size to account for decoded messages
@@ -103,17 +105,16 @@ def create_communicating_agents(
         # Create base network model
         model = Net(
             state_shape=(net_input_dim,),
-            action_shape=action_space[agent_id].n,
+            action_shape=action_space.n,
             hidden_sizes=[128, 128],
-            device=args.device,
         ).to(args.device)
 
         # Create base policy
         optim = torch.optim.Adam(model.parameters(), lr=args.lr)
         base_policy = DiscreteQLearningPolicy(
             model=model,
-            action_space=action_space[agent_id],
-            observation_space=observation_space[agent_id]
+            action_space=action_space,
+            observation_space=env.observation_space
             if not args.with_communication
             else gym.spaces.Box(low=-np.inf, high=np.inf, shape=(net_input_dim,)),
             eps_training=args.eps_train,
