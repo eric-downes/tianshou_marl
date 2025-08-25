@@ -25,12 +25,15 @@ from tianshou.data import Collector, VectorReplayBuffer as ReplayBuffer
 from tianshou.trainer import OffPolicyTrainer as Trainer
 from tianshou.env.enhanced_pettingzoo_env import EnhancedPettingZooEnv as MARLEnv
 
-# Placeholder for AutoPolicy - will be implemented next
+# Import device utilities
+from .device_utils import get_default_device, is_gpu_available, get_device_name
+
+# AutoPolicy implementation
 class AutoPolicy:
     """Automatic policy selection based on environment characteristics."""
     
     @classmethod
-    def from_env(cls, env, mode="independent", config=None, device="cpu", **kwargs):
+    def from_env(cls, env, mode="independent", config=None, device="auto", **kwargs):
         """Create an appropriate policy automatically based on environment.
         
         Args:
@@ -51,8 +54,10 @@ class AutoPolicy:
         from gymnasium import spaces
         import torch
         import numpy as np
+        from .device_utils import validate_device
         
         config = config or {}
+        device = validate_device(device)
         
         # Detect action space type
         if hasattr(env, 'action_space'):
@@ -296,8 +301,141 @@ def _policy_manager_from_env(cls, env, algorithm="DQN", mode="independent", conf
     
     return AutoPolicy.from_env(env, mode=mode, config=config, **kwargs)
 
-# Monkey-patch the factory method onto PolicyManager
+# Monkey-patch the factory method onto both PolicyManager alias and original class
 PolicyManager.from_env = classmethod(_policy_manager_from_env)
+# Also add to the original class so it's available both ways
+from tianshou.algorithm.multiagent import FlexibleMultiAgentPolicyManager
+FlexibleMultiAgentPolicyManager.from_env = classmethod(_policy_manager_from_env)
+
+# QMIXPolicy.from_env() factory method
+def _qmix_policy_from_env(cls, env, config=None, device="auto", **kwargs):
+    """Factory method to create QMIXPolicy from environment.
+    
+    Args:
+        env: Multi-agent environment
+        config: Configuration dictionary with optional keys:
+            - learning_rate: Learning rate for optimizer
+            - hidden_sizes: Hidden layer sizes for Q-networks
+            - mixing_embed_dim: Mixing network embedding dimension
+            - hypernet_embed_dim: Hypernetwork embedding dimension
+            - epsilon: Epsilon for epsilon-greedy exploration
+            - discount_factor: Discount factor
+        device: Device to use ("cuda", "mps", "cpu", or "auto")
+        **kwargs: Additional arguments
+        
+    Returns:
+        QMIXPolicy configured for the environment
+    """
+    from tianshou.algorithm.multiagent.ctde import QMIXMixer
+    from tianshou.algorithm.modelfree.dqn import DiscreteQLearningPolicy
+    from tianshou.utils.net.common import Net
+    from .device_utils import validate_device
+    import torch
+    import torch.nn as nn
+    import numpy as np
+    from gymnasium import spaces
+    
+    config = config or {}
+    device = validate_device(device)
+    
+    # Get configuration parameters
+    learning_rate = config.get("learning_rate", 1e-3)
+    hidden_sizes = config.get("hidden_sizes", [64, 64])
+    mixing_embed_dim = config.get("mixing_embed_dim", 32)
+    hypernet_embed_dim = config.get("hypernet_embed_dim", 64)
+    epsilon = config.get("epsilon", 0.1)
+    discount_factor = config.get("discount_factor", 0.99)
+    
+    # Get environment info
+    agents = env.agents if hasattr(env, 'agents') else []
+    n_agents = len(agents)
+    
+    # Get observation and action spaces
+    if hasattr(env, 'observation_space'):
+        obs_space = env.observation_space
+    else:
+        obs_space = list(env.observation_spaces.values())[0] if hasattr(env, 'observation_spaces') else None
+        
+    if hasattr(env, 'action_space'):
+        action_space = env.action_space
+    else:
+        action_space = list(env.action_spaces.values())[0] if hasattr(env, 'action_spaces') else None
+    
+    # Get observation shape (handle Dict spaces)
+    state_shape = None
+    if hasattr(obs_space, 'shape'):
+        state_shape = obs_space.shape
+    elif hasattr(obs_space, 'spaces'):
+        # Handle Dict spaces
+        if 'observation' in obs_space.spaces:
+            obs_subspace = obs_space.spaces['observation']
+            if hasattr(obs_subspace, 'shape'):
+                state_shape = obs_subspace.shape
+            else:
+                state_shape = (4,)  # Default
+        else:
+            # Flatten dict space
+            total_size = sum(
+                np.prod(space.shape) if hasattr(space, 'shape') else space.n
+                for space in obs_space.spaces.values()
+            )
+            state_shape = (int(total_size),)
+    else:
+        state_shape = (obs_space.n,) if hasattr(obs_space, 'n') else (4,)
+    
+    if state_shape is None:
+        state_shape = (4,)  # Fallback
+    
+    # Get action shape
+    if isinstance(action_space, spaces.Discrete):
+        action_shape = action_space.n
+    else:
+        raise ValueError("QMIX only supports discrete action spaces")
+    
+    # Create Q-networks for each agent
+    actors = []
+    for i in range(n_agents):
+        q_net = Net(
+            state_shape=state_shape,
+            action_shape=action_shape,
+            hidden_sizes=hidden_sizes,
+        ).to(device)
+        actors.append(q_net)
+    
+    # Calculate global state dimension
+    # For simplicity, concatenate all agent observations
+    global_state_dim = int(np.prod(state_shape)) * n_agents
+    
+    # Create QMIX mixer
+    mixer = QMIXMixer(
+        n_agents=n_agents,
+        state_dim=global_state_dim,
+        mixing_embed_dim=mixing_embed_dim,
+        hypernet_embed_dim=hypernet_embed_dim,
+    ).to(device)
+    
+    # Create optimizer for all parameters
+    all_params = []
+    for actor in actors:
+        all_params.extend(actor.parameters())
+    all_params.extend(mixer.parameters())
+    optimizer = torch.optim.Adam(all_params, lr=learning_rate)
+    
+    # Create QMIX policy
+    return cls(
+        actors=actors,
+        mixer=mixer,
+        observation_space=obs_space,
+        action_space=action_space,
+        n_agents=n_agents,
+        optimizer=optimizer,
+        discount_factor=discount_factor,
+        epsilon=epsilon,
+        **kwargs
+    )
+
+# Monkey-patch the factory method onto QMIXPolicy
+QMIXPolicy.from_env = classmethod(_qmix_policy_from_env)
 
 __all__ = [
     # Policy managers
