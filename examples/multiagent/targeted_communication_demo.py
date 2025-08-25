@@ -176,7 +176,7 @@ def demonstrate_targeted_communication():
     print("=" * 60)
     print(f"Number of agents: {num_agents}")
     print(f"Message dimension: {message_dim}")
-    print(f"Communication type: Targeted")
+    print("Communication type: Targeted")
     print("=" * 60)
     
     # Simulate several timesteps

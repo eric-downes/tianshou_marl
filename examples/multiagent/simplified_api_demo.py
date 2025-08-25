@@ -28,7 +28,7 @@ def main():
     env = tictactoe_v3.env()
     env = MARLEnv(env)
     
-    print(f"Environment: Tic-Tac-Toe")
+    print("Environment: Tic-Tac-Toe")
     print(f"Agents: {env.agents}")
     print(f"Action space: {env.action_space}")
     print(f"Observation space: {env.observation_space}\n")
@@ -66,7 +66,7 @@ def main():
         mode="shared",  # All agents share the same policy
         config={"learning_rate": 1e-3}
     )
-    print(f"✓ Shared policy created")
+    print("✓ Shared policy created")
     print(f"  Mode: {shared_policy.mode}")
     print(f"  Unique policies: {len(set(id(p) for p in shared_policy.policies.values()))}\n")
     
@@ -85,8 +85,8 @@ def main():
             "epsilon": 0.1,
         }
     )
-    print(f"✓ DQN PolicyManager created")
-    print(f"  Algorithm: DQN")
+    print("✓ DQN PolicyManager created")
+    print("  Algorithm: DQN")
     print(f"  Mode: {dqn_manager.mode}\n")
     
     # 4. TRAINING SETUP (simplified)
