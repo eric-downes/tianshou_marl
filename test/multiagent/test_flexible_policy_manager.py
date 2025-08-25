@@ -49,7 +49,6 @@ class MockEnv:
         self.agent_idx = {agent: i for i, agent in enumerate(self.agents)}
 
 
-@pytest.mark.slow
 class TestFlexibleMultiAgentPolicyManager:
     """Test flexible multi-agent policy manager."""
 

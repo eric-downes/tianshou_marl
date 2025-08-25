@@ -117,7 +117,6 @@ def create_mock_batch(
     return batch
 
 
-@pytest.mark.slow
 class TestCTDEPolicy:
     """Test suite for CTDEPolicy base class."""
 
@@ -227,7 +226,6 @@ class TestCTDEPolicy:
         assert "critic_loss" in losses
 
 
-@pytest.mark.slow
 class TestGlobalStateConstructor:
     """Test suite for global state construction."""
 
@@ -304,7 +302,6 @@ class TestGlobalStateConstructor:
         assert global_state.shape == (32, 4)
 
 
-@pytest.mark.slow
 class TestQMIX:
     """Test suite for QMIX algorithm."""
 
@@ -405,7 +402,6 @@ class TestQMIX:
         assert losses["loss"] >= 0
 
 
-@pytest.mark.slow
 class TestMADDPG:
     """Test suite for MADDPG algorithm."""
 
@@ -522,7 +518,6 @@ class TestMADDPG:
             assert f"agent_{i}_critic_loss" in losses
 
 
-@pytest.mark.slow
 class TestIntegration:
     """Integration tests for CTDE with other components."""
 

@@ -64,10 +64,12 @@ class EnhancedPettingZooEnv(PettingZooEnv):
         """
         # Auto-detect environment type
         if mode == "auto":
-            # ParallelEnv has observation_spaces (plural) attribute
-            if hasattr(env, "observation_spaces"):
+            # Check if it's actually a ParallelEnv
+            from pettingzoo.utils.env import ParallelEnv
+            if isinstance(env, ParallelEnv):
                 self.mode = "parallel"
             else:
+                # Default to AEC for all other cases
                 self.mode = "aec"
         else:
             self.mode = mode
@@ -128,7 +130,14 @@ class EnhancedPettingZooEnv(PettingZooEnv):
 
     def _parallel_reset(self, *args: Any, **kwargs: Any) -> tuple[dict, dict]:
         """Reset parallel environment."""
-        observations, infos = self.env.reset(*args, **kwargs)
+        reset_result = self.env.reset(*args, **kwargs)
+        
+        # Handle case where reset returns None (AEC environment mistakenly detected as parallel)
+        if reset_result is None:
+            # Fall back to AEC reset
+            return super().reset(*args, **kwargs)
+        
+        observations, infos = reset_result
 
         # Convert to format compatible with collectors
         obs_dict = {
