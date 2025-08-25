@@ -96,9 +96,8 @@ class AutoPolicy:
                 
             # Get observation shape
             state_shape = None
-            if hasattr(obs_space, 'shape'):
-                state_shape = obs_space.shape
-            elif hasattr(obs_space, 'spaces'):
+            # Check for Dict spaces FIRST (they also have 'shape' attribute)
+            if hasattr(obs_space, 'spaces'):
                 # Handle Dict spaces
                 if 'observation' in obs_space.spaces:
                     obs_subspace = obs_space.spaces['observation']
@@ -113,6 +112,8 @@ class AutoPolicy:
                         for space in obs_space.spaces.values()
                     )
                     state_shape = (int(total_size),)
+            elif hasattr(obs_space, 'shape'):
+                state_shape = obs_space.shape
             else:
                 state_shape = (obs_space.n,) if hasattr(obs_space, 'n') else (4,)  # Default fallback
             
@@ -199,9 +200,8 @@ class AutoPolicy:
                     
                 # Get shapes  
                 state_shape = None
-                if hasattr(obs_space, 'shape'):
-                    state_shape = obs_space.shape
-                elif hasattr(obs_space, 'spaces'):
+                # Check for Dict spaces FIRST (they also have 'shape' attribute)
+                if hasattr(obs_space, 'spaces'):
                     # Handle Dict spaces
                     if 'observation' in obs_space.spaces:
                         obs_subspace = obs_space.spaces['observation']
@@ -216,6 +216,8 @@ class AutoPolicy:
                             for space in obs_space.spaces.values()
                         )
                         state_shape = (int(total_size),)
+                elif hasattr(obs_space, 'shape'):
+                    state_shape = obs_space.shape
                 else:
                     state_shape = (obs_space.n,) if hasattr(obs_space, 'n') else (4,)
                     
