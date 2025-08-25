@@ -184,19 +184,32 @@ class TestFactoryMethods:
             for policy in policies[1:]:
                 assert policy is first_policy
                 
-    @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA not available")
+    @pytest.mark.skipif(
+        not (torch.cuda.is_available() or torch.backends.mps.is_available()), 
+        reason="No GPU available (CUDA or MPS)"
+    )
     def test_device_selection(self):
-        """Test automatic device selection."""
+        """Test automatic device selection (CUDA or Metal)."""
         from tianshou_marl import AutoPolicy
+        from tianshou_marl.device_utils import get_default_device
         
         env = tictactoe_v3.env()
         env = EnhancedPettingZooEnv(env)
         
-        # Should automatically use CUDA if available
-        policy = AutoPolicy.from_env(env, device="cuda")
+        # Test auto device selection
+        policy_auto = AutoPolicy.from_env(env, device="auto")
+        expected_device = get_default_device()
         
         # Check if models are on correct device
-        for agent_policy in policy.policies.values():
+        for agent_policy in policy_auto.policies.values():
             if hasattr(agent_policy, 'model'):
                 for param in agent_policy.model.parameters():
-                    assert param.device.type == "cuda"
+                    assert param.device.type == expected_device
+                    
+        # Test explicit MPS if available
+        if torch.backends.mps.is_available():
+            policy_mps = AutoPolicy.from_env(env, device="mps")
+            for agent_policy in policy_mps.policies.values():
+                if hasattr(agent_policy, 'model'):
+                    for param in agent_policy.model.parameters():
+                        assert param.device.type == "mps"
