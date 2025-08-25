@@ -4,11 +4,12 @@
 import numpy as np
 import pytest
 from gymnasium import spaces
+from pettingzoo.utils.env import ParallelEnv
 
 from tianshou.env.enhanced_pettingzoo_env import EnhancedPettingZooEnv
 
 
-class MockParallelEnv:
+class MockParallelEnv(ParallelEnv):
     """Mock PettingZoo ParallelEnv for testing."""
 
     def __init__(self):
@@ -20,6 +21,14 @@ class MockParallelEnv:
         self.action_spaces = {agent: spaces.Discrete(2) for agent in self.agents}
         self.observations = None
         self.infos = None
+
+    def observation_space(self, agent):
+        """Return observation space for an agent."""
+        return self.observation_spaces[agent]
+
+    def action_space(self, agent):
+        """Return action space for an agent."""
+        return self.action_spaces[agent]
 
     def reset(self, seed=None, options=None):
         """Reset and return observations for all agents."""

@@ -59,6 +59,14 @@ class FastMockEnv:
         self.action_spaces = {agent: spaces.Discrete(2) for agent in self.agents}
         self.metadata = {"is_parallelizable": parallel}
 
+    def observation_space(self, agent):
+        """Return observation space for an agent."""
+        return self.observation_spaces[agent]
+
+    def action_space(self, agent):
+        """Return action space for an agent."""
+        return self.action_spaces[agent]
+
     def reset(self, *args, **kwargs):
         obs = {agent: np.zeros(4) for agent in self.agents}
         info = {agent: {} for agent in self.agents}
@@ -79,7 +87,7 @@ class TestFastMARL:
     def test_enhanced_pettingzoo_env_basic(self):
         """Test basic EnhancedPettingZooEnv functionality - fast version."""
         env = FastMockEnv(n_agents=2, parallel=True)
-        wrapped = EnhancedPettingZooEnv(env)
+        wrapped = EnhancedPettingZooEnv(env, mode="parallel")
 
         # Quick test of core functionality
         obs, info = wrapped.reset()
@@ -244,7 +252,7 @@ class TestFastMARL:
         """Test complete multi-agent workflow - fast version."""
         # Setup environment
         env = FastMockEnv(n_agents=2, parallel=True)
-        wrapped_env = EnhancedPettingZooEnv(env)
+        wrapped_env = EnhancedPettingZooEnv(env, mode="parallel")
 
         # Setup policies with parameter sharing
         shared_policy = FastMockPolicy()
