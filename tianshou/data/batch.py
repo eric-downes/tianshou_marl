@@ -642,7 +642,12 @@ class Batch(BatchProtocol):
         if copy:
             batch_dict = deepcopy(batch_dict)
         if batch_dict is not None:
-            if isinstance(batch_dict, dict | BatchProtocol):
+            # Check BatchProtocol first to preserve hybrid types
+            if isinstance(batch_dict, BatchProtocol):
+                _assert_type_keys(batch_dict.keys())
+                for batch_key, obj in batch_dict.items():
+                    self.__dict__[batch_key] = _parse_value(obj)
+            elif isinstance(batch_dict, dict):
                 _assert_type_keys(batch_dict.keys())
                 for batch_key, obj in batch_dict.items():
                     self.__dict__[batch_key] = _parse_value(obj)
@@ -991,9 +996,12 @@ class Batch(BatchProtocol):
             original_keys_only_batch.replace_empty_batches_by_none()
 
         for batch in batches:
-            if isinstance(batch, dict):
+            # Check Batch first to preserve hybrid types
+            if isinstance(batch, Batch):
+                pass  # Already a Batch, use directly
+            elif isinstance(batch, dict):
                 batch = Batch(batch)
-            if not isinstance(batch, Batch):
+            else:
                 raise ValueError(f"Cannot concatenate {type(batch)} in Batch.cat_")
             if len(batch.get_keys()) == 0:
                 continue
@@ -1045,12 +1053,13 @@ class Batch(BatchProtocol):
         # check input format
         batch_list = []
         for batch in batches:
-            if isinstance(batch, dict):
-                if len(batch) > 0:
-                    batch_list.append(Batch(batch))
-            elif isinstance(batch, Batch):
+            # Check Batch first to preserve hybrid types
+            if isinstance(batch, Batch):
                 if len(batch.get_keys()) != 0:
                     batch_list.append(batch)
+            elif isinstance(batch, dict):
+                if len(batch) > 0:
+                    batch_list.append(Batch(batch))
             else:
                 raise ValueError(f"Cannot concatenate {type(batch)} in Batch.stack_")
         if len(batch_list) == 0:
